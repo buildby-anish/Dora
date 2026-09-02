@@ -15,7 +15,7 @@ build" as the first thing to verify, per the testing steps below.
 Dora/
 ├── Dora/
 │   ├── Application/
-│   │   ├── DoraApp.swift               (new)
+│   │   ├── main.swift                  (new — entry point, must keep this exact name)
 │   │   ├── AppDelegate.swift           (new)
 │   │   └── ApplicationCoordinator.swift(new)
 │   ├── Window/
@@ -79,11 +79,17 @@ come in Stages 7–9.
 ## 4. Remove the default entry point conflict
 
 Xcode's App template normally uses `@main` on an `AppDelegate` or a
-SwiftUI `App` struct. This project uses a plain top-level
-`DoraApp.swift` script (`NSApplication.shared`, `app.run()`) as the
-entry point instead, so:
+SwiftUI `App` struct. This project uses a plain top-level script
+(`NSApplication.shared`, `app.run()`) as the entry point instead, and
+that script **must live in a file literally named `main.swift`** —
+Swift only allows top-level executable statements in a file with that
+exact name; anywhere else they're a compile error ("expressions are
+not allowed at the top level"). That file is
+`Application/main.swift` in this delivery — don't rename it.
 
-- Make sure there is **no** `@main` attribute anywhere in the project.
+- Make sure there is **no** `@main` attribute anywhere in the project
+  (it conflicts with a `main.swift`-based entry point — a target can
+  only have one).
 - Make sure there is **no** other file calling `NSApplicationMain` or
   constructing a second `NSApplication`.
 - In **Build Settings**, confirm `Info.plist → Principal class` isn't

@@ -1,5 +1,5 @@
 //
-//  DoraApp.swift
+//  main.swift
 //  Dora
 //
 //  Application entry point. Dora is an AppKit app (not a SwiftUI App
@@ -9,6 +9,14 @@
 //
 //  This file exists purely to bootstrap NSApplication and hand off
 //  control to AppDelegate, which builds the rest of the app.
+//
+//  IMPORTANT: this file must be named exactly "main.swift". Swift
+//  only permits top-level executable statements (not wrapped in a
+//  function/type) in a file with that exact name — in any other file,
+//  the same statements are a compile error ("expressions are not
+//  allowed at the top level"). If you rename this file, either rename
+//  it back to main.swift or convert it to an @main-attributed type
+//  instead (but not both — a target can only have one entry point).
 //
 
 import AppKit
