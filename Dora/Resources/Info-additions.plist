@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Dora/Resources/Info-additions.plist
+
+  This is NOT a full Info.plist — Xcode generates and manages the real
+  one for you (Stage 1 uses "Generate Info.plist File" = Yes, the
+  modern default). These are just the specific KEY/VALUE pairs you
+  need to add under Target > Info > Custom macOS Application Target
+  Properties (click the "+" and add each key below), or paste as raw
+  entries if you switch to an explicit Info.plist file later.
+-->
+<plist version="1.0">
+<dict>
+    <!-- Hides Dora from the Dock and the Cmd+Tab app switcher, since
+         she's a desktop companion, not a document-window app. -->
+    <key>LSUIElement</key>
+    <true/>
+
+    <!-- Not App Sandboxed for Stage 1. Battery/idle/frontmost-app
+         sensors in later stages use APIs that are easiest to access
+         unsandboxed. If you later submit to the Mac App Store you'll
+         need to sandbox and adjust — noted here rather than hidden. -->
+</dict>
+</plist>
