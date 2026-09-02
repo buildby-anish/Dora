@@ -2,35 +2,28 @@
 //  MovementController.swift
 //  Dora
 //
-//  Deterministic autonomous movement. Owns exactly the "movement
-//  data" the spec calls for — current position, target position,
-//  movement speed, facing direction — and a small state machine
-//  (idle / walking / sitting) that decides, on its own, when Dora
-//  should walk somewhere, sit for a while, or just stay put.
-//
-//  This is intentionally simple, weighted-random decision-making, not
-//  a stand-in for BehaviorEngine (Stage 5). Once BehaviorEngine exists
-//  it will own the "should Dora walk/sit/sleep right now" decision
-//  based on mood/battery/time/etc., and call into this controller to
-//  execute that decision (e.g. `beginWalking(toward:)`); the
-//  random-choice logic below is scoped to be easy to delete or
-//  demote to "what happens when BehaviorEngine has no strong opinion"
-//  at that point, without changing this file's public surface.
-//
-//  MovementController never touches window/screen APIs directly — it
-//  is handed a walkable CGRect (from ScreenCoordinator, via DoraScene)
-//  and works entirely in that coordinate space. It also never depends
-//  on the LLM or any AI system, per the architecture rules: movement
-//  is 100% deterministic.
+//  Manages cat location, smart roaming vs. corner sleep state.
+//  - While user is actively working: Cat stays sleeping in the bottom corner beside the Dock.
+//  - When user is idle for >= 1 minute: Cat wakes up, stretches, and walks out to roam near the screen center.
+//  - When user resumes working: Cat walks back to her corner, curls up, and sleeps.
 //
 
 import CoreGraphics
 import Foundation
 
+enum CatBehaviorMode {
+    case sleepingInCorner
+    case wakingUp
+    case walkingToCenter
+    case roamingCenter
+    case returningToCorner
+}
+
 enum MovementState {
     case idle
     case walking
     case sitting
+    case sleeping
 }
 
 enum FacingDirection {
@@ -40,14 +33,12 @@ enum FacingDirection {
 
 final class MovementController {
 
-    private(set) var state: MovementState = .idle
+    private(set) var mode: CatBehaviorMode = .sleepingInCorner
+    private(set) var state: MovementState = .sleeping
     private(set) var currentPosition: CGPoint
     private(set) var targetPosition: CGPoint?
-    private(set) var facingDirection: FacingDirection = .right
+    private(set) var facingDirection: FacingDirection = .left
 
-    /// Points per second. Public/mutable so a future Settings screen
-    /// (Stage 20, "Animation activity") can tune it without needing
-    /// new API here.
     var movementSpeed: CGFloat
 
     private weak var character: DoraCharacter?
@@ -55,58 +46,51 @@ final class MovementController {
     private var groundY: CGFloat
     private let groundInset: CGFloat
 
-    /// How long the current idle/sitting state has lasted, and how
-    /// long it's allowed to last before a new decision is made.
     private var stateTimer: TimeInterval = 0
-    private var nextDecisionTime: TimeInterval
+    private var nextDecisionTime: TimeInterval = 4.0
 
-    /// Destinations closer than this aren't worth "walking" to — they'd
-    /// produce a barely-visible flicker of motion. Below this distance
-    /// a decision to walk instead nudges to a screen edge.
+    private var homeCornerX: CGFloat {
+        // Bottom right corner above dock
+        max(bounds.minX + 50, bounds.maxX - 60)
+    }
+
     private static let minimumWalkDistance: CGFloat = 40
 
     init(
         character: DoraCharacter,
         bounds: CGRect,
         groundInset: CGFloat = 24,
-        movementSpeed: CGFloat = 90
+        movementSpeed: CGFloat = 85
     ) {
         self.character = character
         self.bounds = bounds
         self.groundInset = groundInset
         self.movementSpeed = movementSpeed
         self.groundY = bounds.minY + groundInset + character.size.height / 2
-        self.nextDecisionTime = Self.randomIdleDuration()
 
-        let halfWidth = character.size.width / 2
-        let minX = bounds.minX + halfWidth
-        let maxX = max(minX, bounds.maxX - halfWidth)
-        let clampedX = min(max(character.position.x, minX), maxX)
-        let startPosition = CGPoint(x: clampedX, y: groundY)
+        let startPos = CGPoint(x: max(bounds.minX + 50, bounds.maxX - 60), y: groundY)
+        self.currentPosition = startPos
+        character.position = startPos
+        self.facingDirection = .left
+        character.xScale = -1
 
-        self.currentPosition = startPosition
-        character.position = startPosition
-        character.play(.idle)
+        // Start sleeping in cozy corner by default while user works
+        self.mode = .sleepingInCorner
+        self.state = .sleeping
+        character.play(.sleep)
     }
 
-    /// Called whenever the walkable area changes (screen resize,
-    /// future multi-monitor switch). Keeps Dora — and any in-flight
-    /// destination — inside the new bounds rather than letting her
-    /// end up stranded off-screen or walking toward a point that no
-    /// longer exists.
     func updateBounds(_ newBounds: CGRect) {
         bounds = newBounds
-        guard let character else { return }
+        groundY = bounds.minY + groundInset + (character?.size.height ?? 75) / 2
 
-        let halfWidth = character.size.width / 2
+        let halfWidth = (character?.size.width ?? 80) / 2
         let minX = bounds.minX + halfWidth
         let maxX = max(minX, bounds.maxX - halfWidth)
-
-        groundY = bounds.minY + groundInset + character.size.height / 2
 
         let clampedX = min(max(currentPosition.x, minX), maxX)
         currentPosition = CGPoint(x: clampedX, y: groundY)
-        character.position = currentPosition
+        character?.position = currentPosition
 
         if let target = targetPosition {
             let clampedTargetX = min(max(target.x, minX), maxX)
@@ -114,96 +98,132 @@ final class MovementController {
         }
     }
 
-    /// Advances the state machine by `deltaTime` seconds. Call this
-    /// once per frame (e.g. from `SKScene.update(_:)`); the caller is
-    /// responsible for clamping `deltaTime` to something sane (see
-    /// `DoraScene`) so a stalled frame (app backgrounded, machine
-    /// asleep) doesn't cause Dora to jump — "avoid teleportation"
-    /// applies to time gaps, not just to how position is written.
     func update(deltaTime: TimeInterval) {
-        guard let character else { return }
+        guard let character = character else { return }
 
         switch state {
+        case .sleeping:
+            // Just maintain sleep in corner
+            break
+
         case .idle, .sitting:
             stateTimer += deltaTime
             guard stateTimer >= nextDecisionTime else { return }
             stateTimer = 0
-            makeNextDecision(character: character)
+            makeRoamingDecision(character: character)
 
         case .walking:
             stepTowardTarget(character: character, deltaTime: deltaTime)
         }
     }
 
-    // MARK: - Decisions
+    // MARK: - User Activity State Transitions
 
-    private func makeNextDecision(character: DoraCharacter) {
+    func handleUserBecameIdle() {
+        guard let character = character else { return }
+        guard mode == .sleepingInCorner else { return }
+
+        mode = .wakingUp
+        character.play(.wake) { [weak self, weak character] in
+            guard let self = self, let character = character else { return }
+            // Stretch after waking up
+            character.play(.stretch) { [weak self, weak character] in
+                guard let self = self, let character = character else { return }
+                self.mode = .walkingToCenter
+                self.walkTowardCenter(character: character)
+            }
+        }
+    }
+
+    func handleUserResumedWork() {
+        guard let character = character else { return }
+        // If already sleeping in corner or returning, nothing to do
+        guard mode != .sleepingInCorner && mode != .returningToCorner else { return }
+
+        mode = .returningToCorner
+        walkTowardCorner(character: character)
+    }
+
+    private func walkTowardCenter(character: DoraCharacter) {
+        let centerMinX = bounds.midX - 180
+        let centerMaxX = bounds.midX + 180
+        let destX = CGFloat.random(in: centerMinX...centerMaxX)
+
+        beginWalk(to: destX, character: character)
+    }
+
+    private func walkTowardCorner(character: DoraCharacter) {
+        let destX = homeCornerX
+        beginWalk(to: destX, character: character)
+    }
+
+    private func beginWalk(to destinationX: CGFloat, character: DoraCharacter) {
+        let halfWidth = character.size.width / 2
+        let minX = bounds.minX + halfWidth
+        let maxX = bounds.maxX - halfWidth
+        let clampedX = min(max(destinationX, minX), maxX)
+
+        let newFacing: FacingDirection = clampedX < currentPosition.x ? .left : .right
+        facingDirection = newFacing
+        targetPosition = CGPoint(x: clampedX, y: groundY)
+        state = .walking
+
+        character.play(newFacing == .left ? .walkLeft : .walkRight)
+    }
+
+    private func makeRoamingDecision(character: DoraCharacter) {
+        guard mode == .roamingCenter else { return }
+
         if state == .sitting {
-            // Stand up first, then make a fresh decision shortly
-            // after — mirrors the flow diagram's
-            // sitting → (later) idle → choose destination, rather
-            // than jumping straight from sitting into a new walk.
             state = .idle
             character.play(.idle)
-            nextDecisionTime = Self.shortIdleBeat()
+            nextDecisionTime = .random(in: 2...4)
             return
         }
 
         let roll = Double.random(in: 0..<1)
         switch roll {
-        case ..<0.55:
-            beginWalking(character: character)
-        case 0.55..<0.75:
-            beginSitting(character: character)
+        case ..<0.45:
+            // Walk to a new center spot
+            let centerMinX = max(bounds.minX + 100, bounds.midX - 240)
+            let centerMaxX = min(bounds.maxX - 100, bounds.midX + 240)
+            var destX = CGFloat.random(in: centerMinX...centerMaxX)
+            if abs(destX - currentPosition.x) < Self.minimumWalkDistance {
+                destX = destX < currentPosition.x ? centerMinX : centerMaxX
+            }
+            beginWalk(to: destX, character: character)
+
+        case 0.45..<0.65:
+            // Sit in loaf pose
+            state = .sitting
+            character.play(.sit)
+            nextDecisionTime = .random(in: 5...10)
+
+        case 0.65..<0.80:
+            // Grooming or yawning
+            if Bool.random() {
+                character.play(.groom) { [weak self] in
+                    self?.state = .idle
+                    self?.character?.play(.idle)
+                }
+            } else {
+                character.play(.yawn) { [weak self] in
+                    self?.state = .idle
+                    self?.character?.play(.idle)
+                }
+            }
+            nextDecisionTime = .random(in: 4...8)
+
         default:
-            // Explicitly "occasionally remain still": re-roll the
-            // idle timer instead of doing anything.
-            nextDecisionTime = Self.randomIdleDuration()
+            // Idle stay put
+            character.play(.idle)
+            nextDecisionTime = .random(in: 3...7)
         }
-    }
-
-    private func beginWalking(character: DoraCharacter) {
-        let halfWidth = character.size.width / 2
-        let minX = bounds.minX + halfWidth
-        let maxX = bounds.maxX - halfWidth
-
-        guard maxX > minX else {
-            // Screen/available width too narrow to roam meaningfully
-            // (e.g. a tiny external display). Stay put rather than
-            // fighting degenerate bounds.
-            nextDecisionTime = Self.randomIdleDuration()
-            return
-        }
-
-        var destinationX = CGFloat.random(in: minX...maxX)
-        if abs(destinationX - currentPosition.x) < Self.minimumWalkDistance {
-            destinationX = destinationX < currentPosition.x ? minX : maxX
-        }
-
-        let newFacing: FacingDirection = destinationX < currentPosition.x ? .left : .right
-        facingDirection = newFacing
-        targetPosition = CGPoint(x: destinationX, y: groundY)
-        state = .walking
-
-        // "Turn before changing direction": DoraCharacter mirrors
-        // herself the instant a walk animation in the new facing
-        // direction starts playing, so committing to the walk here —
-        // before any position changes next frame — is the turn.
-        character.play(newFacing == .left ? .walkLeft : .walkRight)
-    }
-
-    private func beginSitting(character: DoraCharacter) {
-        state = .sitting
-        character.play(.sit)
-        nextDecisionTime = Self.randomSitDuration()
     }
 
     private func stepTowardTarget(character: DoraCharacter, deltaTime: TimeInterval) {
         guard let target = targetPosition else {
-            // Defensive: walking state with no target shouldn't
-            // happen, but fail safe into idle rather than getting
-            // stuck.
-            returnToIdle(character: character)
+            returnToIdleOrSleep(character: character)
             return
         }
 
@@ -214,7 +234,7 @@ final class MovementController {
             currentPosition = target
             character.position = currentPosition
             targetPosition = nil
-            returnToIdle(character: character)
+            handleReachedTarget(character: character)
             return
         }
 
@@ -223,15 +243,44 @@ final class MovementController {
         character.position = currentPosition
     }
 
-    private func returnToIdle(character: DoraCharacter) {
-        state = .idle
-        character.play(.idle)
-        nextDecisionTime = Self.randomIdleDuration()
+    private func handleReachedTarget(character: DoraCharacter) {
+        switch mode {
+        case .walkingToCenter:
+            mode = .roamingCenter
+            state = .idle
+            character.play(.idle)
+            nextDecisionTime = .random(in: 3...6)
+
+        case .returningToCorner:
+            mode = .sleepingInCorner
+            state = .sleeping
+            character.play(.sit)
+            // Sits down then curls into deep sleep
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self, weak character] in
+                guard let self = self, self.mode == .sleepingInCorner else { return }
+                character?.play(.sleep)
+            }
+
+        case .roamingCenter:
+            state = .idle
+            character.play(.idle)
+            nextDecisionTime = .random(in: 3...7)
+
+        default:
+            state = .idle
+            character.play(.idle)
+            nextDecisionTime = .random(in: 3...7)
+        }
     }
 
-    // MARK: - Timing
-
-    private static func randomIdleDuration() -> TimeInterval { .random(in: 3...8) }
-    private static func randomSitDuration() -> TimeInterval { .random(in: 4...10) }
-    private static func shortIdleBeat() -> TimeInterval { .random(in: 1...2) }
+    private func returnToIdleOrSleep(character: DoraCharacter) {
+        if mode == .sleepingInCorner {
+            state = .sleeping
+            character.play(.sleep)
+        } else {
+            state = .idle
+            character.play(.idle)
+            nextDecisionTime = .random(in: 3...6)
+        }
+    }
 }

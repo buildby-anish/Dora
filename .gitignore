@@ -13,6 +13,7 @@ DerivedData/
 !*.xcworkspace/contents.xcworkspacedata
 
 # Temporary & cache
+DoraApp_bin
 scratch/
 .scratch/
 *.swp

@@ -14,8 +14,9 @@ import SpriteKit
 
 final class WindowController: NSWindowController {
 
-    private let skView: SKView
-    private let scene: DoraScene
+    let skView: SKView
+    let scene: DoraScene
+    var doraWindow: DoraWindow? { window as? DoraWindow }
 
     init(screen: NSScreen) {
         let frame = ScreenCoordinator.fullFrame(for: screen)

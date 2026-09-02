@@ -27,6 +27,9 @@ enum DoraAnimation: String, CaseIterable {
     case sit
     case sleep
     case wake
+    case stretch
+    case groom
+    case yawn
     case thinking
     case happy
     case concerned
@@ -47,6 +50,9 @@ enum DoraAnimation: String, CaseIterable {
         case .sit: return "Sit"
         case .sleep: return "Sleep"
         case .wake: return "Wake"
+        case .stretch: return "Stretch"
+        case .groom: return "Groom"
+        case .yawn: return "Yawn"
         case .thinking: return "Think"
         case .happy: return "Happy"
         case .concerned: return "Concerned"
@@ -75,7 +81,7 @@ enum DoraAnimation: String, CaseIterable {
     /// exists to do that (Stage 5).
     var loops: Bool {
         switch self {
-        case .blink, .wake, .celebrate:
+        case .blink, .wake, .stretch, .groom, .yawn, .celebrate:
             return false
         default:
             return true

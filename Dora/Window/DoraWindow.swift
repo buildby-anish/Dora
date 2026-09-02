@@ -67,11 +67,9 @@ final class DoraWindow: NSWindow {
         isMovableByWindowBackground = false
         isReleasedWhenClosed = false
 
-        // Stage 1: window-wide click passthrough is left OFF so the
-        // window can be inspected/interacted with directly. Stage 4
-        // will drive this from InteractionController based on cursor
-        // proximity to Dora rather than leaving it static.
-        ignoresMouseEvents = false
+        // Click-through is ENABLED by default so the entire desktop is accessible.
+        // InteractionController will selectively disable this when hovering near the cat.
+        ignoresMouseEvents = true
     }
 
     // Borderless windows normally can't become key/main, which would

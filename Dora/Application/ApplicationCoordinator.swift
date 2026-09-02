@@ -14,15 +14,63 @@ import AppKit
 final class ApplicationCoordinator {
 
     private var windowController: WindowController?
+    private var interactionController: InteractionController?
+    private var chatWindowController: ChatWindowController?
+    private var activityMonitor: UserActivityMonitor?
 
     func start() {
         let screen = ScreenCoordinator.primaryScreen()
         let controller = WindowController(screen: screen)
         self.windowController = controller
+
+        let chatController = ChatWindowController()
+        self.chatWindowController = chatController
+
+        let scene = controller.scene
+
+        chatController.onCatReaction = { [weak scene] reaction in
+            scene?.dora?.play(reaction)
+        }
+
+        if let window = controller.window {
+            interactionController = InteractionController(
+                window: window,
+                interactiveRectsProvider: { [weak scene] in
+                    scene?.getInteractiveScreenRects() ?? []
+                },
+                onCatClicked: { [weak self, weak scene] in
+                    guard let self = self, let scene = scene else { return }
+                    scene.dora?.play(.happy)
+                    let catPos = scene.catScreenPosition()
+                    self.chatWindowController?.showNear(screenPoint: catPos)
+                },
+                onBubbleClicked: { [weak self, weak scene] in
+                    guard let self = self, let scene = scene else { return }
+                    let catPos = scene.catScreenPosition()
+                    self.chatWindowController?.showNear(screenPoint: catPos)
+                }
+            )
+        }
+
+        let monitor = UserActivityMonitor()
+        monitor.idleThresholdSeconds = 60.0 // 1 min idle trigger
+        monitor.onUserBecameIdle = { [weak scene] in
+            scene?.userBecameIdle()
+        }
+        monitor.onUserResumedActivity = { [weak scene] in
+            scene?.userResumedWork()
+        }
+        self.activityMonitor = monitor
+
         controller.showWindow()
     }
 
     func stop() {
+        activityMonitor?.stopMonitoring()
+        activityMonitor = nil
+        chatWindowController?.hidePanel()
+        chatWindowController = nil
+        interactionController = nil
         windowController?.closeWindow()
         windowController = nil
     }

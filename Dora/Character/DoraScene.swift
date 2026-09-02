@@ -2,27 +2,8 @@
 //  DoraScene.swift
 //  Dora
 //
-//  The SpriteKit scene that fills the transparent overlay window.
-//  Stays a thin container: places Dora, computes her walkable
-//  boundary from the real screen, and drives MovementController once
-//  per frame. Real mood/battery/time-driven behavior still doesn't
-//  exist yet — that's BehaviorEngine, Stage 5 — so for now
-//  MovementController is making its own simple idle/walk/sit
-//  decisions, and this scene's only job is to keep it supplied with
-//  accurate timing and boundaries.
-//
-//  Deviation from the Stage 2 plan, noted per the project's "explain
-//  before changing" rule: Stage 2 left a DEBUG-only animation demo
-//  here that cycled through all 12 states on a timer, with a note
-//  that it would be removed once BehaviorEngine (Stage 5) existed to
-//  drive real state changes. MovementController now drives idle/walk/
-//  sit for real, two stages earlier than planned — leaving the demo
-//  in would fight it for control of the same animations (both calling
-//  `character.play(...)` on independent timers), so it's removed now
-//  rather than at Stage 5 as originally noted. Sleep/wake/thinking/
-//  happy/concerned/charging/celebrate still have no driver until
-//  BehaviorEngine and the sensor stages exist — they remain reachable
-//  via `DoraCharacter.play(_:)` for whoever calls it next.
+//  The SpriteKit scene that hosts Dora the Cat and the floating Speech Bubble.
+//  Coordinates movement, speech bubble positioning, and screen-space hit testing.
 //
 
 import AppKit
@@ -31,17 +12,15 @@ import SpriteKit
 final class DoraScene: SKScene {
 
     private(set) var dora: DoraCharacter?
+    private(set) var speechBubble: SpeechBubbleNode?
     private var movementController: MovementController?
     private var lastUpdateTime: TimeInterval?
 
-    /// Caps the delta passed to MovementController for any single
-    /// frame. Without this, a stalled frame (app backgrounded, display
-    /// sleep, breakpoint during debugging) would hand MovementController
-    /// a huge deltaTime on the next frame, which — multiplied by
-    /// movementSpeed — would make Dora jump a large distance in one
-    /// step. That's exactly the "teleportation" the movement spec says
-    /// to avoid, so it's prevented at the timing layer rather than
-    /// trusted to position-clamping alone.
+    private var suggestionTimer: TimeInterval = 0
+    private var nextSuggestionInterval: TimeInterval = 25.0
+
+    var onOpenChatRequested: ((NSPoint) -> Void)?
+
     private static let maxDeltaTime: TimeInterval = 0.25
     private static let defaultGroundInset: CGFloat = 24
 
@@ -57,6 +36,15 @@ final class DoraScene: SKScene {
             bounds: bounds,
             groundInset: Self.defaultGroundInset
         )
+
+        let bubble = SpeechBubbleNode()
+        addChild(bubble)
+        self.speechBubble = bubble
+
+        // Initial welcome bubble
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.speechBubble?.showMessage("Meow! Click me anytime to chat! 🐾", autoDismissAfter: 7.0)
+        }
     }
 
     override func didChangeSize(_ oldSize: CGSize) {
@@ -71,30 +59,98 @@ final class DoraScene: SKScene {
         let rawDelta = currentTime - lastUpdateTime
         let deltaTime = min(max(rawDelta, 0), Self.maxDeltaTime)
         movementController?.update(deltaTime: deltaTime)
+
+        // Keep speech bubble anchored above cat
+        if let dora = dora, let bubble = speechBubble {
+            bubble.position = CGPoint(
+                x: dora.position.x,
+                y: dora.position.y + dora.size.height / 2 + 16
+            )
+        }
+
+        // Periodic proactive tips/suggestions (only while roaming/idle, not while sleeping)
+        if movementController?.mode != .sleepingInCorner {
+            suggestionTimer += deltaTime
+            if suggestionTimer >= nextSuggestionInterval {
+                suggestionTimer = 0
+                nextSuggestionInterval = TimeInterval.random(in: 35...65)
+                let tip = LLMService.shared.getRandomSuggestion()
+                speechBubble?.showMessage(tip, autoDismissAfter: 7.0)
+            }
+        }
+    }
+
+    func userBecameIdle() {
+        movementController?.handleUserBecameIdle()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.speechBubble?.showMessage("You took a break! Need any tips or a chat? 🐾", autoDismissAfter: 6.0)
+        }
+    }
+
+    func userResumedWork() {
+        speechBubble?.hideMessage()
+        movementController?.handleUserResumedWork()
     }
 
     @discardableResult
     private func placeDoraNearBottom() -> DoraCharacter {
         let character = DoraCharacter()
-        // Placed at a reasonable starting x; MovementController
-        // clamps this into the real walkable bounds (and sets the
-        // correct ground y) immediately in its initializer, so this
-        // is only ever a starting guess, never Dora's final position.
         character.position = CGPoint(x: size.width * 0.5, y: 0)
         addChild(character)
         self.dora = character
         return character
     }
 
-    /// Dora's allowed roaming rectangle, in this scene's coordinate
-    /// space, accounting for the Dock and menu bar. Falls back to the
-    /// full scene frame (with no Dock/menu-bar awareness) if the
-    /// scene isn't attached to a real window/screen yet — this should
-    /// only happen very briefly during setup, if at all.
     private func currentWalkableBounds() -> CGRect {
         guard let window = view?.window, let screen = window.screen else {
             return CGRect(origin: .zero, size: size)
         }
         return ScreenCoordinator.walkableBounds(windowFrame: window.frame, screen: screen)
+    }
+
+    // MARK: - Hit-Testing & Interactive Screen Rects
+
+    func getInteractiveScreenRects() -> [NSRect] {
+        guard let window = view?.window else { return [] }
+        var rects: [NSRect] = []
+
+        // 1. Cat Bounding Rect in Screen Coordinates
+        if let dora = dora {
+            let catSceneFrame = CGRect(
+                x: dora.position.x - dora.size.width / 2 - 10,
+                y: dora.position.y - dora.size.height / 2 - 10,
+                width: dora.size.width + 20,
+                height: dora.size.height + 20
+            )
+            let catScreenRect = NSRect(
+                x: window.frame.minX + catSceneFrame.minX,
+                y: window.frame.minY + catSceneFrame.minY,
+                width: catSceneFrame.width,
+                height: catSceneFrame.height
+            )
+            rects.append(catScreenRect)
+        }
+
+        // 2. Speech Bubble Bounding Rect in Screen Coordinates
+        if let bubble = speechBubble, !bubble.isHidden && bubble.alpha > 0 {
+            let bubbleFrame = bubble.bubbleFrameInParent
+            let bubbleScreenRect = NSRect(
+                x: window.frame.minX + bubbleFrame.minX,
+                y: window.frame.minY + bubbleFrame.minY,
+                width: bubbleFrame.width,
+                height: bubbleFrame.height
+            )
+            rects.append(bubbleScreenRect)
+        }
+
+        return rects
+    }
+
+    func catScreenPosition() -> NSPoint {
+        guard let window = view?.window, let dora = dora else { return .zero }
+        return NSPoint(
+            x: window.frame.minX + dora.position.x,
+            y: window.frame.minY + dora.position.y
+        )
     }
 }
