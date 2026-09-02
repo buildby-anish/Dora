@@ -25,6 +25,9 @@
 //  it), since InteractionController doesn't exist yet. This will be
 //  revisited in Stage 4 (Mouse Interaction).
 //
+
+import AppKit
+
 final class DoraWindow: NSWindow {
 
     init(contentRect: NSRect) {
