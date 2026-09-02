@@ -32,4 +32,24 @@ enum ScreenCoordinator {
     static func fullFrame(for screen: NSScreen) -> NSRect {
         screen.frame
     }
+
+    /// `screen`'s visible frame (excludes menu bar & Dock), converted
+    /// into the local coordinate space of a window whose frame is
+    /// `windowFrame` — i.e. the same coordinate space as an SKNode's
+    /// `position` inside that window's content view (bottom-left
+    /// origin, per AppKit/SpriteKit convention).
+    ///
+    /// This is the seam that lets MovementController stay ignorant of
+    /// NSScreen entirely: it only ever sees "here is the rectangle
+    /// Dora is allowed to roam in," already adjusted for the Dock and
+    /// menu bar, in the same coordinates as her own position.
+    static func walkableBounds(windowFrame: NSRect, screen: NSScreen) -> CGRect {
+        let visible = visibleFrame(for: screen)
+        return CGRect(
+            x: visible.minX - windowFrame.minX,
+            y: visible.minY - windowFrame.minY,
+            width: visible.width,
+            height: visible.height
+        )
+    }
 }
