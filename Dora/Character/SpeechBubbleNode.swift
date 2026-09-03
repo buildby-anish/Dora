@@ -19,7 +19,7 @@ final class SpeechBubbleNode: SKNode {
 
     override init() {
         bubbleBackground = SKShapeNode()
-        textLabel = SKLabelNode(fontNamed: "SF Pro Rounded")
+        textLabel = SKLabelNode(fontNamed: "HelveticaNeue-Medium")
 
         super.init()
 
