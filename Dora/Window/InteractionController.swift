@@ -2,9 +2,8 @@
 //  InteractionController.swift
 //  Dora
 //
-//  Manages transparent click-through and proximity hit-testing.
-//  Ensures the user has 100% access to their screen, only intercepting
-//  mouse clicks when directly hovering over or clicking the cat/bubble.
+//  Manages transparent click-through, proximity hit-testing, and
+//  mouse drag-and-drop (Pick & Drop) vs. Click-to-Chat.
 //
 
 import AppKit
@@ -17,20 +16,31 @@ final class InteractionController {
 
     private var interactiveRectsProvider: (() -> [NSRect])?
     private var onCatClicked: (() -> Void)?
-    private var onBubbleClicked: (() -> Void)?
+    private var onCatDragStarted: ((NSPoint) -> Void)?
+    private var onCatDragged: ((NSPoint) -> Void)?
+    private var onCatDragEnded: ((NSPoint) -> Void)?
 
     private var isMouseInsideInteractiveRegion = false
+    private var isTrackingPress = false
+    private var isDragging = false
+    private var mouseDownPoint: NSPoint = .zero
+
+    private static let dragThreshold: CGFloat = 6.0
 
     init(
         window: NSWindow,
         interactiveRectsProvider: @escaping () -> [NSRect],
         onCatClicked: @escaping () -> Void,
-        onBubbleClicked: @escaping () -> Void
+        onCatDragStarted: @escaping (NSPoint) -> Void,
+        onCatDragged: @escaping (NSPoint) -> Void,
+        onCatDragEnded: @escaping (NSPoint) -> Void
     ) {
         self.window = window
         self.interactiveRectsProvider = interactiveRectsProvider
         self.onCatClicked = onCatClicked
-        self.onBubbleClicked = onBubbleClicked
+        self.onCatDragStarted = onCatDragStarted
+        self.onCatDragged = onCatDragged
+        self.onCatDragEnded = onCatDragEnded
 
         // Start with click-through ENABLED so desktop is immediately accessible
         window.ignoresMouseEvents = true
@@ -43,23 +53,16 @@ final class InteractionController {
     }
 
     private func setupMonitors() {
-        // Global monitor (fires when mouse moves over any other app)
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown]) { [weak self] event in
-            self?.handleMouseMovement(screenPoint: NSEvent.mouseLocation)
+        let eventMask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDown, .leftMouseDragged, .leftMouseUp]
+
+        // Global monitor (fires when mouse interactions occur over any app)
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: eventMask) { [weak self] event in
+            self?.handleMouseEvent(event)
         }
 
-        // Local monitor (fires when mouse moves over Dora's window)
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown]) { [weak self] event in
-            guard let self = self else { return event }
-            let point = NSEvent.mouseLocation
-
-            if event.type == .leftMouseDown {
-                if self.isPointInsideInteractiveRegion(point) {
-                    self.onCatClicked?()
-                }
-            } else if event.type == .mouseMoved {
-                self.handleMouseMovement(screenPoint: point)
-            }
+        // Local monitor (fires when mouse interactions occur over Dora's window)
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: eventMask) { [weak self] event in
+            self?.handleMouseEvent(event)
             return event
         }
     }
@@ -75,15 +78,64 @@ final class InteractionController {
         }
     }
 
-    private func handleMouseMovement(screenPoint: NSPoint) {
+    private func handleMouseEvent(_ event: NSEvent) {
+        let point = NSEvent.mouseLocation
+
+        switch event.type {
+        case .mouseMoved:
+            if !isDragging {
+                handleMouseHover(screenPoint: point)
+            }
+
+        case .leftMouseDown:
+            if isPointInsideInteractiveRegion(point) {
+                isTrackingPress = true
+                isDragging = false
+                mouseDownPoint = point
+                window?.ignoresMouseEvents = false
+            }
+
+        case .leftMouseDragged:
+            if isTrackingPress {
+                let dx = point.x - mouseDownPoint.x
+                let dy = point.y - mouseDownPoint.y
+                let dist = hypot(dx, dy)
+
+                if dist >= Self.dragThreshold {
+                    if !isDragging {
+                        isDragging = true
+                        onCatDragStarted?(point)
+                    }
+                    onCatDragged?(point)
+                }
+            }
+
+        case .leftMouseUp:
+            if isTrackingPress {
+                isTrackingPress = false
+                if isDragging {
+                    isDragging = false
+                    onCatDragEnded?(point)
+                } else {
+                    // It was a click / tap! Open chat text box
+                    onCatClicked?()
+                }
+                handleMouseHover(screenPoint: point)
+            }
+
+        default:
+            break
+        }
+    }
+
+    private func handleMouseHover(screenPoint: NSPoint) {
         guard let window = window else { return }
 
         let inside = isPointInsideInteractiveRegion(screenPoint)
         if inside != isMouseInsideInteractiveRegion {
             isMouseInsideInteractiveRegion = inside
             DispatchQueue.main.async {
-                // If inside interactive area (cat / bubble), capture mouse clicks;
-                // otherwise pass all clicks through to underlying desktop apps.
+                // If hovering inside Dora's rect, capture mouse; otherwise pass through
                 window.ignoresMouseEvents = !inside
             }
         }
@@ -99,3 +151,4 @@ final class InteractionController {
         return false
     }
 }
+
