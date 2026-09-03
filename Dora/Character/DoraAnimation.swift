@@ -35,6 +35,11 @@ enum DoraAnimation: String, CaseIterable {
     case concerned
     case charging
     case celebrate
+    case pickedUp
+    case landing
+    case jump
+    case pounce
+    case curious
 
     /// Name of the `.atlas` asset folder (see
     /// `Resources/DoraAssets/README.md`) this animation's frames
@@ -58,6 +63,11 @@ enum DoraAnimation: String, CaseIterable {
         case .concerned: return "Concerned"
         case .charging: return "Charging"
         case .celebrate: return "Celebrate"
+        case .pickedUp: return "PickedUp"
+        case .landing: return "Landing"
+        case .jump: return "Jump"
+        case .pounce: return "Pounce"
+        case .curious: return "Curious"
         }
     }
 
@@ -75,13 +85,10 @@ enum DoraAnimation: String, CaseIterable {
     }
 
     /// Whether this animation should loop until explicitly changed,
-    /// or play once and stop. One-shot animations (blink, wake,
-    /// celebrate) are the natural place to hang a completion handler
-    /// so a caller can chain back to `.idle` once BehaviorEngine
-    /// exists to do that (Stage 5).
+    /// or play once and stop.
     var loops: Bool {
         switch self {
-        case .blink, .wake, .stretch, .groom, .yawn, .celebrate:
+        case .blink, .wake, .stretch, .groom, .yawn, .celebrate, .landing, .pounce:
             return false
         default:
             return true
