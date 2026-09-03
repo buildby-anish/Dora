@@ -44,10 +44,14 @@ final class ApplicationCoordinator {
                     let catPos = scene.catScreenPosition()
                     self.chatWindowController?.showNear(screenPoint: catPos)
                 },
-                onBubbleClicked: { [weak self, weak scene] in
-                    guard let self = self, let scene = scene else { return }
-                    let catPos = scene.catScreenPosition()
-                    self.chatWindowController?.showNear(screenPoint: catPos)
+                onCatDragStarted: { [weak scene] point in
+                    scene?.startDrag(at: point)
+                },
+                onCatDragged: { [weak scene] point in
+                    scene?.updateDrag(to: point)
+                },
+                onCatDragEnded: { [weak scene] point in
+                    scene?.endDrag(at: point)
                 }
             )
         }
