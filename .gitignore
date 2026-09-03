@@ -1,20 +1,66 @@
-# macOS
+# macOS System Files
 .DS_Store
 .AppleDouble
 .LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
 
-# Xcode / Swift build artifacts
+# Swift & Module Cache
+.module_cache/
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode & Build Artifacts
 build/
 DerivedData/
+*.xcuserstate
+project.xcworkspace/xcuserdata/
+*.xcuserdatad
+*.xcscmblueprint
+*.moved-aside
+*.ipa
+*.app
+*.dSYM.zip
+*.dSYM
+
+# Preserve Xcode Project Configs
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
 *.xcworkspace/*
 !*.xcworkspace/contents.xcworkspacedata
 
-# Temporary & cache
+# Binaries, Libraries & Objects
+*_bin
 DoraApp_bin
-scratch/
-.scratch/
+*.o
+*.dylib
+*.a
+
+# Editor & IDE files
+.vscode/
+.idea/
 *.swp
 *~
+*.bak
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Temporary Scratch Files & Crash Reports
+scratch/
+.scratch/
+*.log
+crash.log
+
