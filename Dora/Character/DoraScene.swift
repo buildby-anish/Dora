@@ -146,6 +146,33 @@ final class DoraScene: SKScene {
         return rects
     }
 
+    // MARK: - Drag & Drop Coordination
+
+    func startDrag(at screenPoint: NSPoint) {
+        let scenePoint = screenPointToScene(screenPoint)
+        movementController?.setPickedUp(true)
+        movementController?.updateDraggedPosition(scenePoint)
+    }
+
+    func updateDrag(to screenPoint: NSPoint) {
+        let scenePoint = screenPointToScene(screenPoint)
+        movementController?.updateDraggedPosition(scenePoint)
+    }
+
+    func endDrag(at screenPoint: NSPoint) {
+        let scenePoint = screenPointToScene(screenPoint)
+        movementController?.updateDraggedPosition(scenePoint)
+        movementController?.setPickedUp(false)
+    }
+
+    private func screenPointToScene(_ screenPoint: NSPoint) -> CGPoint {
+        guard let window = view?.window else { return screenPoint }
+        return CGPoint(
+            x: screenPoint.x - window.frame.minX,
+            y: screenPoint.y - window.frame.minY
+        )
+    }
+
     func catScreenPosition() -> NSPoint {
         guard let window = view?.window, let dora = dora else { return .zero }
         return NSPoint(
