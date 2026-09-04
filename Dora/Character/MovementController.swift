@@ -60,13 +60,13 @@ final class MovementController {
     private var stateTimer: TimeInterval = 0
     private var nextDecisionTime: TimeInterval = 4.0
 
-    private static let margin: CGFloat = 50
+    private static let margin: CGFloat = 32
 
     init(
         character: DoraCharacter,
         bounds: CGRect,
-        groundInset: CGFloat = 24,
-        movementSpeed: CGFloat = 95
+        groundInset: CGFloat = 16,
+        movementSpeed: CGFloat = 78
     ) {
         self.character = character
         self.bounds = bounds
@@ -185,12 +185,12 @@ final class MovementController {
     // MARK: - 4-Corner Sleep Selection
 
     private func allCorners() -> [CGPoint] {
-        let padX = character?.size.width ?? 80
-        let padY = character?.size.height ?? 75
-        let minX = bounds.minX + padX / 2 + 15
-        let maxX = bounds.maxX - padX / 2 - 15
-        let minY = bounds.minY + padY / 2 + 15
-        let maxY = bounds.maxY - padY / 2 - 25
+        let padX = character?.size.width ?? 48
+        let padY = character?.size.height ?? 44
+        let minX = bounds.minX + padX / 2 + 10
+        let maxX = bounds.maxX - padX / 2 - 10
+        let minY = bounds.minY + padY / 2 + 10
+        let maxY = bounds.maxY - padY / 2 - 20
 
         return [
             CGPoint(x: maxX, y: minY), // Bottom-Right
@@ -207,7 +207,7 @@ final class MovementController {
 
         // If far away, perform a graceful leap or walk
         let dist = distance(from: currentPosition, to: targetCorner)
-        if dist > 350 {
+        if dist > 280 {
             beginLeap(to: targetCorner, character: character)
         } else {
             beginWalk(to: targetCorner, character: character)
@@ -331,8 +331,8 @@ final class MovementController {
         leapProgress = 0.0
 
         let dist = distance(from: leapStartPos, to: leapTargetPos)
-        leapDuration = max(0.6, min(1.3, Double(dist / 320)))
-        leapPeakHeight = max(50, min(140, dist * 0.35))
+        leapDuration = max(0.55, min(1.2, Double(dist / 260)))
+        leapPeakHeight = max(40, min(110, dist * 0.32))
 
         let newFacing: FacingDirection = clamped.x < currentPosition.x ? .left : .right
         facingDirection = newFacing
@@ -396,8 +396,8 @@ final class MovementController {
     // MARK: - Geometry Utilities
 
     private func getRandomScreenPoint() -> CGPoint {
-        let padX = (character?.size.width ?? 80) / 2 + 30
-        let padY = (character?.size.height ?? 75) / 2 + 30
+        let padX = (character?.size.width ?? 48) / 2 + 20
+        let padY = (character?.size.height ?? 44) / 2 + 20
         let minX = bounds.minX + padX
         let maxX = bounds.maxX - padX
         let minY = bounds.minY + padY
@@ -410,8 +410,8 @@ final class MovementController {
     }
 
     private func clampToScreen(_ point: CGPoint) -> CGPoint {
-        let padX = (character?.size.width ?? 80) / 2 + 10
-        let padY = (character?.size.height ?? 75) / 2 + 10
+        let padX = (character?.size.width ?? 48) / 2 + 8
+        let padY = (character?.size.height ?? 44) / 2 + 8
         let minX = bounds.minX + padX
         let maxX = bounds.maxX - padX
         let minY = bounds.minY + padY
