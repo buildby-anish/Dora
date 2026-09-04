@@ -2,10 +2,16 @@
 //  DoraCharacter.swift
 //  Dora
 //
-//  Dora the Cat: A rich, lifelike, 3D-styled procedural feline companion.
-//  Features layered volumetric 3D shading, dynamic contact shadow, glossy eyes with
-//  specular highlights, multi-segment smooth physics tail, animated paws with pads,
-//  and ultra-smooth feline animations.
+//  Dora the Cat: A compact, lifelike 3D-styled procedural feline companion.
+//  Designed with non-distracting compact proportions, volumetric fur shading,
+//  glossy 3D eyes, multi-joint fluid tail wave, and authentic feline behaviors:
+//  - Slow affection blinks & independent ear scanning
+//  - 4-paw diagonal sequence walking with spine counter-sway
+//  - True cat loaf pose with tucked paws
+//  - Deep curled sleep with dreaming twitches & breathing
+//  - Two-stage morning stretch (front dip + back arch)
+//  - Authentic face grooming (paw lick & ear wipe)
+//  - Butt-wiggle pounce, curiosity alert, and scruff-picked dangling
 //
 
 import AppKit
@@ -13,12 +19,12 @@ import SpriteKit
 
 final class DoraCharacter: SKNode {
 
-    /// Bounding size of the cat
+    /// Compact bounding size of the cat (non-distracting on screen)
     let size: CGSize
 
     private(set) var currentAnimation: DoraAnimation = .idle
 
-    // MARK: - Root & Shadow
+    // MARK: - Root & Dynamic Shadow
     private let catRootNode = SKNode()
     private let shadowNode: SKShapeNode
 
@@ -51,6 +57,7 @@ final class DoraCharacter: SKNode {
     private let muzzleNode: SKShapeNode
     private let noseNode: SKShapeNode
     private let mouthNode: SKShapeNode
+    private let tongueNode: SKShapeNode
     private let whiskersNode: SKShapeNode
 
     // Paws & Toe Beans
@@ -76,173 +83,174 @@ final class DoraCharacter: SKNode {
     private static let earAnimKey = "catEarAction"
     private static let breathingAnimKey = "catBreathingAction"
     private static let pawWiggleKey = "catPawWiggleAction"
+    private static let whiskerTwitchKey = "catWhiskerTwitchAction"
 
-    // 3D Color Palette (Warm Golden Ginger / Amber Tabby)
+    // 3D Color Palette (Warm Golden Amber Tabby)
     private static let furBase = NSColor(red: 0.98, green: 0.62, blue: 0.28, alpha: 1.0)
     private static let furHighlight = NSColor(red: 1.0, green: 0.78, blue: 0.48, alpha: 1.0)
     private static let furShadow = NSColor(red: 0.82, green: 0.46, blue: 0.18, alpha: 1.0)
-    private static let furDark = NSColor(red: 0.65, green: 0.32, blue: 0.12, alpha: 1.0)
+    private static let furDark = NSColor(red: 0.60, green: 0.30, blue: 0.10, alpha: 1.0)
     private static let chestWhite = NSColor(red: 0.99, green: 0.97, blue: 0.94, alpha: 1.0)
     private static let innerEarPink = NSColor(red: 0.98, green: 0.68, blue: 0.76, alpha: 1.0)
     private static let pawPadPink = NSColor(red: 0.96, green: 0.55, blue: 0.65, alpha: 1.0)
     private static let eyeEmerald = NSColor(red: 0.20, green: 0.78, blue: 0.52, alpha: 1.0)
-    private static let eyeGlow = NSColor(red: 0.35, green: 0.92, blue: 0.65, alpha: 1.0)
     private static let nosePink = NSColor(red: 0.95, green: 0.48, blue: 0.58, alpha: 1.0)
 
     init(animationManager: AnimationManager = .shared) {
-        let catSize = CGSize(width: 84, height: 78)
+        // Compact, non-intrusive desktop size (~46x42 points)
+        let catSize = CGSize(width: 48, height: 44)
         self.size = catSize
 
-        // 0. 3D Soft Contact Shadow (on ground / surface)
-        shadowNode = SKShapeNode(ellipseOf: CGSize(width: 68, height: 18))
-        shadowNode.fillColor = NSColor(white: 0.0, alpha: 0.28)
+        // 0. Soft Contact Ground Shadow
+        shadowNode = SKShapeNode(ellipseOf: CGSize(width: 38, height: 10))
+        shadowNode.fillColor = NSColor(white: 0.0, alpha: 0.24)
         shadowNode.strokeColor = .clear
-        shadowNode.position = CGPoint(x: 0, y: -27)
+        shadowNode.position = CGPoint(x: 0, y: -16)
         shadowNode.zPosition = -2
 
-        // 1. Multi-Joint 3D Tail
-        tailSegment1 = SKShapeNode(rectOf: CGSize(width: 10, height: 18), cornerRadius: 5)
+        // 1. Multi-Joint Articulated 3D Tail
+        tailSegment1 = SKShapeNode(rectOf: CGSize(width: 6, height: 10), cornerRadius: 3)
         tailSegment1.fillColor = Self.furBase
         tailSegment1.strokeColor = Self.furShadow
-        tailSegment1.lineWidth = 1.2
-        tailSegment1.position = CGPoint(x: 0, y: 9)
+        tailSegment1.lineWidth = 0.8
+        tailSegment1.position = CGPoint(x: 0, y: 5)
 
-        tailSegment2 = SKShapeNode(rectOf: CGSize(width: 9, height: 18), cornerRadius: 4.5)
+        tailSegment2 = SKShapeNode(rectOf: CGSize(width: 5.5, height: 10), cornerRadius: 2.75)
         tailSegment2.fillColor = Self.furBase
         tailSegment2.strokeColor = Self.furShadow
-        tailSegment2.lineWidth = 1.2
-        tailSegment2.position = CGPoint(x: 0, y: 15)
+        tailSegment2.lineWidth = 0.8
+        tailSegment2.position = CGPoint(x: 0, y: 8)
 
-        tailSegment3 = SKShapeNode(rectOf: CGSize(width: 8, height: 18), cornerRadius: 4)
+        tailSegment3 = SKShapeNode(rectOf: CGSize(width: 5, height: 10), cornerRadius: 2.5)
         tailSegment3.fillColor = Self.furHighlight
         tailSegment3.strokeColor = Self.furShadow
-        tailSegment3.lineWidth = 1.2
-        tailSegment3.position = CGPoint(x: 0, y: 15)
+        tailSegment3.lineWidth = 0.8
+        tailSegment3.position = CGPoint(x: 0, y: 8)
 
-        tailTipNode = SKShapeNode(circleOfRadius: 4.5)
+        tailTipNode = SKShapeNode(circleOfRadius: 2.6)
         tailTipNode.fillColor = Self.chestWhite
         tailTipNode.strokeColor = .clear
-        tailTipNode.position = CGPoint(x: 0, y: 10)
+        tailTipNode.position = CGPoint(x: 0, y: 6)
 
         tailSegment3.addChild(tailTipNode)
         tailSegment2.addChild(tailSegment3)
         tailSegment1.addChild(tailSegment2)
         tailBaseNode.addChild(tailSegment1)
-        tailBaseNode.position = CGPoint(x: -24, y: -10)
+        tailBaseNode.position = CGPoint(x: -14, y: -6)
         tailBaseNode.zPosition = -1
 
-        // 2. 3D Back Paws
-        backLeftPawNode = DoraCharacter.createPaw(width: 15, height: 12, isBack: true)
-        backRightPawNode = DoraCharacter.createPaw(width: 15, height: 12, isBack: true)
-        backLeftPawNode.position = CGPoint(x: -18, y: -24)
-        backRightPawNode.position = CGPoint(x: 18, y: -24)
+        // 2. Back Paws
+        backLeftPawNode = DoraCharacter.createPaw(width: 9, height: 7)
+        backRightPawNode = DoraCharacter.createPaw(width: 9, height: 7)
+        backLeftPawNode.position = CGPoint(x: -11, y: -14)
+        backRightPawNode.position = CGPoint(x: 11, y: -14)
         backLeftPawNode.zPosition = 0
         backRightPawNode.zPosition = 0
 
-        // 3. Volumetric 3D Body
-        bodyNode = SKShapeNode(rectOf: CGSize(width: 60, height: 50), cornerRadius: 25)
+        // 3. Volumetric 3D Torso
+        bodyNode = SKShapeNode(rectOf: CGSize(width: 36, height: 28), cornerRadius: 14)
         bodyNode.fillColor = Self.furBase
         bodyNode.strokeColor = Self.furShadow
-        bodyNode.lineWidth = 2.0
+        bodyNode.lineWidth = 1.2
 
-        bodyHighlightNode = SKShapeNode(ellipseOf: CGSize(width: 44, height: 26))
+        bodyHighlightNode = SKShapeNode(ellipseOf: CGSize(width: 26, height: 15))
         bodyHighlightNode.fillColor = Self.furHighlight.withAlphaComponent(0.45)
         bodyHighlightNode.strokeColor = .clear
-        bodyHighlightNode.position = CGPoint(x: 0, y: 10)
+        bodyHighlightNode.position = CGPoint(x: 0, y: 5)
 
-        chestFluffNode = SKShapeNode(ellipseOf: CGSize(width: 34, height: 32))
+        chestFluffNode = SKShapeNode(ellipseOf: CGSize(width: 20, height: 18))
         chestFluffNode.fillColor = Self.chestWhite
         chestFluffNode.strokeColor = .clear
-        chestFluffNode.position = CGPoint(x: 0, y: -8)
+        chestFluffNode.position = CGPoint(x: 0, y: -4)
 
-        bodyContainer.position = CGPoint(x: 0, y: -6)
+        bodyContainer.position = CGPoint(x: 0, y: -3)
         bodyContainer.zPosition = 1
         bodyContainer.addChild(bodyNode)
         bodyContainer.addChild(bodyHighlightNode)
         bodyContainer.addChild(chestFluffNode)
 
-        // 4. 3D Front Paws with cute toe pads
-        frontLeftPawNode = DoraCharacter.createPaw(width: 14, height: 12, isBack: false)
-        frontRightPawNode = DoraCharacter.createPaw(width: 14, height: 12, isBack: false)
-        frontLeftPawNode.position = CGPoint(x: -11, y: -25)
-        frontRightPawNode.position = CGPoint(x: 11, y: -25)
+        // 4. Front Paws
+        frontLeftPawNode = DoraCharacter.createPaw(width: 8.5, height: 7)
+        frontRightPawNode = DoraCharacter.createPaw(width: 8.5, height: 7)
+        frontLeftPawNode.position = CGPoint(x: -6.5, y: -15)
+        frontRightPawNode.position = CGPoint(x: 6.5, y: -15)
         frontLeftPawNode.zPosition = 4
         frontRightPawNode.zPosition = 4
 
-        // 5. 3D Head & Dimensional Features
-        headNode = SKShapeNode(ellipseOf: CGSize(width: 56, height: 46))
+        // 5. 3D Head & Features
+        headNode = SKShapeNode(ellipseOf: CGSize(width: 33, height: 27))
         headNode.fillColor = Self.furBase
         headNode.strokeColor = Self.furShadow
-        headNode.lineWidth = 2.0
+        headNode.lineWidth = 1.2
 
-        headHighlightNode = SKShapeNode(ellipseOf: CGSize(width: 38, height: 22))
+        headHighlightNode = SKShapeNode(ellipseOf: CGSize(width: 22, height: 13))
         headHighlightNode.fillColor = Self.furHighlight.withAlphaComponent(0.5)
         headHighlightNode.strokeColor = .clear
-        headHighlightNode.position = CGPoint(x: 0, y: 10)
+        headHighlightNode.position = CGPoint(x: 0, y: 6)
 
         // 3D Ears with Depth
         let leftEarPath = CGMutablePath()
-        leftEarPath.move(to: CGPoint(x: -24, y: 10))
-        leftEarPath.addLine(to: CGPoint(x: -20, y: 32))
-        leftEarPath.addLine(to: CGPoint(x: -4, y: 18))
+        leftEarPath.move(to: CGPoint(x: -14, y: 6))
+        leftEarPath.addLine(to: CGPoint(x: -12, y: 19))
+        leftEarPath.addLine(to: CGPoint(x: -2, y: 11))
         leftEarPath.closeSubpath()
         leftEarNode = SKShapeNode(path: leftEarPath)
         leftEarNode.fillColor = Self.furBase
         leftEarNode.strokeColor = Self.furShadow
-        leftEarNode.lineWidth = 2.0
+        leftEarNode.lineWidth = 1.2
 
         let leftInnerPath = CGMutablePath()
-        leftInnerPath.move(to: CGPoint(x: -21, y: 12))
-        leftInnerPath.addLine(to: CGPoint(x: -18, y: 27))
-        leftInnerPath.addLine(to: CGPoint(x: -7, y: 17))
+        leftInnerPath.move(to: CGPoint(x: -12.5, y: 7.5))
+        leftInnerPath.addLine(to: CGPoint(x: -10.8, y: 16))
+        leftInnerPath.addLine(to: CGPoint(x: -4, y: 10.5))
         leftInnerPath.closeSubpath()
         leftInnerEarNode = SKShapeNode(path: leftInnerPath)
         leftInnerEarNode.fillColor = Self.innerEarPink
         leftInnerEarNode.strokeColor = .clear
 
-        leftEarTipNode = SKShapeNode(circleOfRadius: 2.5)
+        leftEarTipNode = SKShapeNode(circleOfRadius: 1.5)
         leftEarTipNode.fillColor = Self.furDark
         leftEarTipNode.strokeColor = .clear
-        leftEarTipNode.position = CGPoint(x: -20, y: 31)
+        leftEarTipNode.position = CGPoint(x: -12, y: 18.5)
 
         let rightEarPath = CGMutablePath()
-        rightEarPath.move(to: CGPoint(x: 24, y: 10))
-        rightEarPath.addLine(to: CGPoint(x: 20, y: 32))
-        rightEarPath.addLine(to: CGPoint(x: 4, y: 18))
+        rightEarPath.move(to: CGPoint(x: 14, y: 6))
+        rightEarPath.addLine(to: CGPoint(x: 12, y: 19))
+        rightEarPath.addLine(to: CGPoint(x: 2, y: 11))
         rightEarPath.closeSubpath()
         rightEarNode = SKShapeNode(path: rightEarPath)
         rightEarNode.fillColor = Self.furBase
         rightEarNode.strokeColor = Self.furShadow
-        rightEarNode.lineWidth = 2.0
+        rightEarNode.lineWidth = 1.2
 
         let rightInnerPath = CGMutablePath()
-        rightInnerPath.move(to: CGPoint(x: 21, y: 12))
-        rightInnerPath.addLine(to: CGPoint(x: 18, y: 27))
-        rightInnerPath.addLine(to: CGPoint(x: 7, y: 17))
+        rightInnerPath.move(to: CGPoint(x: 12.5, y: 7.5))
+        rightInnerPath.addLine(to: CGPoint(x: 10.8, y: 16))
+        rightInnerPath.addLine(to: CGPoint(x: 4, y: 10.5))
         rightInnerPath.closeSubpath()
         rightInnerEarNode = SKShapeNode(path: rightInnerPath)
         rightInnerEarNode.fillColor = Self.innerEarPink
         rightInnerEarNode.strokeColor = .clear
 
-        rightEarTipNode = SKShapeNode(circleOfRadius: 2.5)
+        rightEarTipNode = SKShapeNode(circleOfRadius: 1.5)
         rightEarTipNode.fillColor = Self.furDark
         rightEarTipNode.strokeColor = .clear
-        rightEarTipNode.position = CGPoint(x: 20, y: 31)
+        rightEarTipNode.position = CGPoint(x: 12, y: 18.5)
 
-        // 6. Glossy 3D Eyes with Depth & Reflections
-        let eyeSize = CGSize(width: 15, height: 18)
+        // 6. Glossy 3D Eyes
+        let eyeSize = CGSize(width: 9, height: 11)
         leftEyeNode = SKShapeNode(ellipseOf: eyeSize)
         rightEyeNode = SKShapeNode(ellipseOf: eyeSize)
         for eye in [leftEyeNode, rightEyeNode] {
             eye.fillColor = Self.eyeEmerald
             eye.strokeColor = Self.furDark
-            eye.lineWidth = 1.0
+            eye.lineWidth = 0.8
         }
-        leftEyeNode.position = CGPoint(x: -13, y: 3)
-        rightEyeNode.position = CGPoint(x: 13, y: 3)
+        leftEyeNode.position = CGPoint(x: -7.5, y: 2)
+        rightEyeNode.position = CGPoint(x: 7.5, y: 2)
 
         // Pupils
-        let pupilSize = CGSize(width: 7, height: 14)
+        let pupilSize = CGSize(width: 4.2, height: 8.5)
         leftPupilNode = SKShapeNode(ellipseOf: pupilSize)
         rightPupilNode = SKShapeNode(ellipseOf: pupilSize)
         for pupil in [leftPupilNode, rightPupilNode] {
@@ -252,74 +260,80 @@ final class DoraCharacter: SKNode {
         leftEyeNode.addChild(leftPupilNode)
         rightEyeNode.addChild(rightPupilNode)
 
-        // Specular Catchlights (Primary + Secondary for glassy 3D look)
-        leftHighlight1 = SKShapeNode(circleOfRadius: 3.0)
-        rightHighlight1 = SKShapeNode(circleOfRadius: 3.0)
-        leftHighlight2 = SKShapeNode(circleOfRadius: 1.5)
-        rightHighlight2 = SKShapeNode(circleOfRadius: 1.5)
+        // Specular Catchlights
+        leftHighlight1 = SKShapeNode(circleOfRadius: 1.8)
+        rightHighlight1 = SKShapeNode(circleOfRadius: 1.8)
+        leftHighlight2 = SKShapeNode(circleOfRadius: 0.9)
+        rightHighlight2 = SKShapeNode(circleOfRadius: 0.9)
 
         for h in [leftHighlight1, rightHighlight1, leftHighlight2, rightHighlight2] {
             h.fillColor = .white
             h.strokeColor = .clear
         }
-        leftHighlight1.position = CGPoint(x: 2.5, y: 3.5)
-        rightHighlight1.position = CGPoint(x: 2.5, y: 3.5)
-        leftHighlight2.position = CGPoint(x: -2.5, y: -3.5)
-        rightHighlight2.position = CGPoint(x: -2.5, y: -3.5)
+        leftHighlight1.position = CGPoint(x: 1.5, y: 2.2)
+        rightHighlight1.position = CGPoint(x: 1.5, y: 2.2)
+        leftHighlight2.position = CGPoint(x: -1.5, y: -2.2)
+        rightHighlight2.position = CGPoint(x: -1.5, y: -2.2)
 
         leftEyeNode.addChild(leftHighlight1)
         leftEyeNode.addChild(leftHighlight2)
         rightEyeNode.addChild(rightHighlight1)
         rightEyeNode.addChild(rightHighlight2)
 
-        // 7. 3D Muzzle, Pink Nose, Mouth
-        muzzleNode = SKShapeNode(ellipseOf: CGSize(width: 22, height: 14))
+        // 7. Muzzle, Nose, Mouth & Tongue
+        muzzleNode = SKShapeNode(ellipseOf: CGSize(width: 14, height: 9))
         muzzleNode.fillColor = Self.chestWhite.withAlphaComponent(0.95)
         muzzleNode.strokeColor = .clear
-        muzzleNode.position = CGPoint(x: 0, y: -6)
+        muzzleNode.position = CGPoint(x: 0, y: -3.5)
 
         let nosePath = CGMutablePath()
-        nosePath.move(to: CGPoint(x: -4, y: -2))
-        nosePath.addLine(to: CGPoint(x: 4, y: -2))
-        nosePath.addLine(to: CGPoint(x: 0, y: -6))
+        nosePath.move(to: CGPoint(x: -2.5, y: -1))
+        nosePath.addLine(to: CGPoint(x: 2.5, y: -1))
+        nosePath.addLine(to: CGPoint(x: 0, y: -3.5))
         nosePath.closeSubpath()
         noseNode = SKShapeNode(path: nosePath)
         noseNode.fillColor = Self.nosePink
         noseNode.strokeColor = .clear
 
         let mouthPath = CGMutablePath()
-        mouthPath.move(to: CGPoint(x: -6, y: -9))
-        mouthPath.addQuadCurve(to: CGPoint(x: 0, y: -6.5), control: CGPoint(x: -3, y: -11))
-        mouthPath.addQuadCurve(to: CGPoint(x: 6, y: -9), control: CGPoint(x: 3, y: -11))
+        mouthPath.move(to: CGPoint(x: -3.8, y: -5.5))
+        mouthPath.addQuadCurve(to: CGPoint(x: 0, y: -4), control: CGPoint(x: -2, y: -6.8))
+        mouthPath.addQuadCurve(to: CGPoint(x: 3.8, y: -5.5), control: CGPoint(x: 2, y: -6.8))
         mouthNode = SKShapeNode(path: mouthPath)
         mouthNode.strokeColor = Self.furDark
-        mouthNode.lineWidth = 1.6
+        mouthNode.lineWidth = 1.0
         mouthNode.lineCap = .round
 
-        // 8. 3D Curved Whiskers
+        tongueNode = SKShapeNode(ellipseOf: CGSize(width: 4, height: 5))
+        tongueNode.fillColor = Self.innerEarPink
+        tongueNode.strokeColor = .clear
+        tongueNode.position = CGPoint(x: 0, y: -6.5)
+        tongueNode.isHidden = true
+
+        // 8. Delicate Whiskers
         let whiskerPath = CGMutablePath()
-        // Left whiskers
-        whiskerPath.move(to: CGPoint(x: -16, y: -3))
-        whiskerPath.addQuadCurve(to: CGPoint(x: -36, y: 1), control: CGPoint(x: -26, y: 0))
-        whiskerPath.move(to: CGPoint(x: -16, y: -6))
-        whiskerPath.addQuadCurve(to: CGPoint(x: -37, y: -6), control: CGPoint(x: -26, y: -6))
-        whiskerPath.move(to: CGPoint(x: -16, y: -9))
-        whiskerPath.addQuadCurve(to: CGPoint(x: -35, y: -14), control: CGPoint(x: -26, y: -11))
-        // Right whiskers
-        whiskerPath.move(to: CGPoint(x: 16, y: -3))
-        whiskerPath.addQuadCurve(to: CGPoint(x: 36, y: 1), control: CGPoint(x: 26, y: 0))
-        whiskerPath.move(to: CGPoint(x: 16, y: -6))
-        whiskerPath.addQuadCurve(to: CGPoint(x: 37, y: -6), control: CGPoint(x: 26, y: -6))
-        whiskerPath.move(to: CGPoint(x: 16, y: -9))
-        whiskerPath.addQuadCurve(to: CGPoint(x: 35, y: -14), control: CGPoint(x: 26, y: -11))
+        // Left
+        whiskerPath.move(to: CGPoint(x: -10, y: -2))
+        whiskerPath.addQuadCurve(to: CGPoint(x: -22, y: 1), control: CGPoint(x: -16, y: 0))
+        whiskerPath.move(to: CGPoint(x: -10, y: -4))
+        whiskerPath.addQuadCurve(to: CGPoint(x: -23, y: -4), control: CGPoint(x: -16, y: -4))
+        whiskerPath.move(to: CGPoint(x: -10, y: -6))
+        whiskerPath.addQuadCurve(to: CGPoint(x: -21, y: -9), control: CGPoint(x: -16, y: -7))
+        // Right
+        whiskerPath.move(to: CGPoint(x: 10, y: -2))
+        whiskerPath.addQuadCurve(to: CGPoint(x: 22, y: 1), control: CGPoint(x: 16, y: 0))
+        whiskerPath.move(to: CGPoint(x: 10, y: -4))
+        whiskerPath.addQuadCurve(to: CGPoint(x: 23, y: -4), control: CGPoint(x: 16, y: -4))
+        whiskerPath.move(to: CGPoint(x: 10, y: -6))
+        whiskerPath.addQuadCurve(to: CGPoint(x: 21, y: -9), control: CGPoint(x: 16, y: -7))
 
         whiskersNode = SKShapeNode(path: whiskerPath)
-        whiskersNode.strokeColor = NSColor(white: 0.15, alpha: 0.75)
-        whiskersNode.lineWidth = 1.3
+        whiskersNode.strokeColor = NSColor(white: 0.18, alpha: 0.7)
+        whiskersNode.lineWidth = 0.9
         whiskersNode.lineCap = .round
 
-        // Assembly of Head Container
-        headContainer.position = CGPoint(x: 0, y: 15)
+        // Head Assembly
+        headContainer.position = CGPoint(x: 0, y: 9)
         headContainer.zPosition = 5
         headContainer.addChild(leftEarNode)
         headContainer.addChild(leftInnerEarNode)
@@ -332,6 +346,7 @@ final class DoraCharacter: SKNode {
         headContainer.addChild(muzzleNode)
         headContainer.addChild(leftEyeNode)
         headContainer.addChild(rightEyeNode)
+        headContainer.addChild(tongueNode)
         headContainer.addChild(noseNode)
         headContainer.addChild(mouthNode)
         headContainer.addChild(whiskersNode)
@@ -340,7 +355,6 @@ final class DoraCharacter: SKNode {
 
         super.init()
 
-        // Assemble Character hierarchy
         addChild(shadowNode)
 
         catRootNode.addChild(tailBaseNode)
@@ -362,15 +376,14 @@ final class DoraCharacter: SKNode {
     }
 
     // MARK: - Paw Factory with Toe Beans
-    private static func createPaw(width: CGFloat, height: CGFloat, isBack: Bool) -> SKNode {
+    private static func createPaw(width: CGFloat, height: CGFloat) -> SKNode {
         let container = SKNode()
         let paw = SKShapeNode(ellipseOf: CGSize(width: width, height: height))
         paw.fillColor = chestWhite
-        paw.strokeColor = furShadow.withAlphaComponent(0.6)
-        paw.lineWidth = 1.2
+        paw.strokeColor = furShadow.withAlphaComponent(0.5)
+        paw.lineWidth = 0.8
         container.addChild(paw)
 
-        // Cute mini toe bean on bottom
         let bean = SKShapeNode(ellipseOf: CGSize(width: width * 0.45, height: height * 0.35))
         bean.fillColor = pawPadPink.withAlphaComponent(0.85)
         bean.strokeColor = .clear
@@ -411,6 +424,7 @@ final class DoraCharacter: SKNode {
         rightEyeNode.removeAction(forKey: Self.blinkAnimKey)
         leftEarNode.removeAction(forKey: Self.earAnimKey)
         rightEarNode.removeAction(forKey: Self.earAnimKey)
+        whiskersNode.removeAction(forKey: Self.whiskerTwitchKey)
         effectsContainer.removeAllChildren()
 
         catRootNode.position = .zero
@@ -419,15 +433,15 @@ final class DoraCharacter: SKNode {
         catRootNode.alpha = 1.0
 
         shadowNode.setScale(1.0)
-        shadowNode.alpha = 0.28
-        shadowNode.position = CGPoint(x: 0, y: -27)
+        shadowNode.alpha = 0.24
+        shadowNode.position = CGPoint(x: 0, y: -16)
 
-        bodyContainer.position = CGPoint(x: 0, y: -6)
+        bodyContainer.position = CGPoint(x: 0, y: -3)
         bodyContainer.yScale = 1.0
         bodyContainer.xScale = 1.0
         bodyContainer.zRotation = 0
 
-        headContainer.position = CGPoint(x: 0, y: 15)
+        headContainer.position = CGPoint(x: 0, y: 9)
         headContainer.zRotation = 0
         headContainer.yScale = 1.0
 
@@ -438,13 +452,19 @@ final class DoraCharacter: SKNode {
         leftPupilNode.setScale(1.0)
         rightPupilNode.setScale(1.0)
 
-        frontLeftPawNode.position = CGPoint(x: -11, y: -25)
-        frontRightPawNode.position = CGPoint(x: 11, y: -25)
+        tongueNode.isHidden = true
+
+        frontLeftPawNode.position = CGPoint(x: -6.5, y: -15)
+        frontRightPawNode.position = CGPoint(x: 6.5, y: -15)
         frontLeftPawNode.zRotation = 0
         frontRightPawNode.zRotation = 0
+        frontLeftPawNode.isHidden = false
+        frontRightPawNode.isHidden = false
 
-        backLeftPawNode.position = CGPoint(x: -18, y: -24)
-        backRightPawNode.position = CGPoint(x: 18, y: -24)
+        backLeftPawNode.position = CGPoint(x: -11, y: -14)
+        backRightPawNode.position = CGPoint(x: 11, y: -14)
+        backLeftPawNode.isHidden = false
+        backRightPawNode.isHidden = false
 
         tailBaseNode.zRotation = 0
         tailSegment1.zRotation = 0
@@ -513,181 +533,365 @@ final class DoraCharacter: SKNode {
         }
     }
 
-    // MARK: - Ultra-Smooth 3D Animation Routines
+    // MARK: - Lifelike Feline Procedural Animation Routines
 
     private func animateIdle() {
-        // Continuous smooth sine breathing
+        // Natural relaxed feline breathing (2.8s full respiration cycle)
         let breatheIn = SKAction.group([
-            SKAction.scaleY(to: 1.04, duration: 1.2),
-            SKAction.scaleX(to: 0.98, duration: 1.2),
-            SKAction.moveBy(x: 0, y: 1.5, duration: 1.2)
+            SKAction.scaleY(to: 1.03, duration: 1.4),
+            SKAction.scaleX(to: 0.985, duration: 1.4),
+            SKAction.moveBy(x: 0, y: 1.0, duration: 1.4)
         ])
         breatheIn.timingMode = .easeInEaseOut
         let breatheOut = SKAction.group([
-            SKAction.scaleY(to: 0.98, duration: 1.2),
-            SKAction.scaleX(to: 1.02, duration: 1.2),
-            SKAction.moveBy(x: 0, y: -1.5, duration: 1.2)
+            SKAction.scaleY(to: 0.98, duration: 1.4),
+            SKAction.scaleX(to: 1.015, duration: 1.4),
+            SKAction.moveBy(x: 0, y: -1.0, duration: 1.4)
         ])
         breatheOut.timingMode = .easeInEaseOut
         bodyContainer.run(.repeatForever(.sequence([breatheIn, breatheOut])), withKey: Self.breathingAnimKey)
 
-        // Smooth multi-segment sine wave tail swish
-        animate3DTailWave(amplitude: 0.28, speed: 1.4)
+        // Sinuous multi-joint feline tail wave with gentle tip flick
+        animate3DTailWave(amplitude: 0.22, speed: 1.6)
 
-        loopingBlink()
+        // Affectionate slow blinks + occasional standard blinks
+        loopingFelineBlink()
 
-        // Occasional realistic ear flick
-        let flickLeft = SKAction.sequence([
-            .rotate(toAngle: -0.16, duration: 0.07),
-            .rotate(toAngle: 0.05, duration: 0.06),
-            .rotate(toAngle: 0, duration: 0.07)
+        // Independent organic ear scanning
+        let leftEarFlick = SKAction.sequence([
+            .wait(forDuration: 3.8, withRange: 2.5),
+            .rotate(toAngle: -0.14, duration: 0.08),
+            .rotate(toAngle: 0.04, duration: 0.08),
+            .rotate(toAngle: 0, duration: 0.08)
         ])
-        let earFlick = SKAction.sequence([
-            .wait(forDuration: 3.5, withRange: 2.0),
-            flickLeft
+        leftEarNode.run(.repeatForever(leftEarFlick), withKey: Self.earAnimKey)
+
+        let rightEarFlick = SKAction.sequence([
+            .wait(forDuration: 4.5, withRange: 3.0),
+            .rotate(toAngle: 0.14, duration: 0.08),
+            .rotate(toAngle: -0.04, duration: 0.08),
+            .rotate(toAngle: 0, duration: 0.08)
         ])
-        leftEarNode.run(.repeatForever(earFlick), withKey: Self.earAnimKey)
+        rightEarNode.run(.repeatForever(rightEarFlick), withKey: Self.earAnimKey)
     }
 
     private func animateWalking() {
-        // Fluid 4-paw stride & 3D body sway
-        let stepDuration = 0.16
+        // Authentic 4-leg diagonal feline gait cycle
+        let stepDuration = 0.14
 
-        let stepA = SKAction.run { [weak self] in
+        let step1 = SKAction.run { [weak self] in
             guard let self = self else { return }
-            self.frontLeftPawNode.run(SKAction.moveTo(y: -19, duration: stepDuration))
-            self.frontRightPawNode.run(SKAction.moveTo(y: -26, duration: stepDuration))
-            self.backLeftPawNode.run(SKAction.moveTo(y: -26, duration: stepDuration))
-            self.backRightPawNode.run(SKAction.moveTo(y: -21, duration: stepDuration))
-            self.bodyContainer.run(SKAction.rotate(toAngle: -0.04, duration: stepDuration))
-            self.headContainer.run(SKAction.moveTo(y: 13, duration: stepDuration))
+            // Back-left + front-right swing phase
+            self.backLeftPawNode.run(SKAction.moveTo(y: -11, duration: stepDuration))
+            self.frontRightPawNode.run(SKAction.moveTo(y: -11, duration: stepDuration))
+            self.backRightPawNode.run(SKAction.moveTo(y: -15, duration: stepDuration))
+            self.frontLeftPawNode.run(SKAction.moveTo(y: -15, duration: stepDuration))
+            self.bodyContainer.run(SKAction.rotate(toAngle: -0.035, duration: stepDuration))
+            self.headContainer.run(SKAction.moveTo(y: 8, duration: stepDuration))
         }
 
-        let stepB = SKAction.run { [weak self] in
+        let step2 = SKAction.run { [weak self] in
             guard let self = self else { return }
-            self.frontLeftPawNode.run(SKAction.moveTo(y: -26, duration: stepDuration))
-            self.frontRightPawNode.run(SKAction.moveTo(y: -19, duration: stepDuration))
-            self.backLeftPawNode.run(SKAction.moveTo(y: -21, duration: stepDuration))
-            self.backRightPawNode.run(SKAction.moveTo(y: -26, duration: stepDuration))
-            self.bodyContainer.run(SKAction.rotate(toAngle: 0.04, duration: stepDuration))
-            self.headContainer.run(SKAction.moveTo(y: 16, duration: stepDuration))
+            // Back-right + front-left swing phase
+            self.backLeftPawNode.run(SKAction.moveTo(y: -15, duration: stepDuration))
+            self.frontRightPawNode.run(SKAction.moveTo(y: -15, duration: stepDuration))
+            self.backRightPawNode.run(SKAction.moveTo(y: -11, duration: stepDuration))
+            self.frontLeftPawNode.run(SKAction.moveTo(y: -11, duration: stepDuration))
+            self.bodyContainer.run(SKAction.rotate(toAngle: 0.035, duration: stepDuration))
+            self.headContainer.run(SKAction.moveTo(y: 10, duration: stepDuration))
         }
 
         let walkCycle = SKAction.sequence([
-            stepA, .wait(forDuration: stepDuration),
-            stepB, .wait(forDuration: stepDuration)
+            step1, .wait(forDuration: stepDuration),
+            step2, .wait(forDuration: stepDuration)
         ])
         catRootNode.run(.repeatForever(walkCycle), withKey: Self.catAnimKey)
 
-        animate3DTailWave(amplitude: 0.45, speed: 0.7)
-        loopingBlink()
+        animate3DTailWave(amplitude: 0.38, speed: 0.8)
+        loopingFelineBlink()
     }
 
     private func animateSitting() {
-        // Cozy 3D cat loaf
+        // Authentic cat loaf: front paws tuck under chest, body lowers, tail wraps close
         bodyContainer.run(.group([
-            SKAction.scaleY(to: 0.82, duration: 0.35),
-            SKAction.scaleX(to: 1.08, duration: 0.35)
+            SKAction.scaleY(to: 0.80, duration: 0.35),
+            SKAction.scaleX(to: 1.08, duration: 0.35),
+            SKAction.moveTo(y: -5, duration: 0.35)
         ]))
-        headContainer.run(.moveTo(y: 9, duration: 0.35))
-        frontLeftPawNode.run(.moveTo(y: -23, duration: 0.35))
-        frontRightPawNode.run(.moveTo(y: -23, duration: 0.35))
+        headContainer.run(.moveTo(y: 5.5, duration: 0.35))
 
-        // Curl tail tightly around body
-        tailBaseNode.run(.rotate(toAngle: 0.55, duration: 0.4))
-        tailSegment1.run(.rotate(toAngle: 0.4, duration: 0.4))
-        tailSegment2.run(.rotate(toAngle: 0.3, duration: 0.4))
-        tailSegment3.run(.rotate(toAngle: 0.2, duration: 0.4))
+        // Paws tucked smoothly under loaf
+        frontLeftPawNode.run(.group([SKAction.moveTo(y: -14, duration: 0.3), SKAction.fadeAlpha(to: 0.2, duration: 0.3)]))
+        frontRightPawNode.run(.group([SKAction.moveTo(y: -14, duration: 0.3), SKAction.fadeAlpha(to: 0.2, duration: 0.3)]))
 
-        loopingBlink()
+        // Tail wrapped neatly against the flank
+        tailBaseNode.run(.rotate(toAngle: 0.65, duration: 0.4))
+        tailSegment1.run(.rotate(toAngle: 0.45, duration: 0.4))
+        tailSegment2.run(.rotate(toAngle: 0.35, duration: 0.4))
+        tailSegment3.run(.rotate(toAngle: 0.25, duration: 0.4))
+
+        loopingFelineBlink()
     }
 
     private func animateSleeping() {
-        // Deep sleep curled pose
+        // Deep curled sleeping cat ball
         bodyContainer.run(.group([
-            SKAction.scaleY(to: 0.76, duration: 0.4),
-            SKAction.scaleX(to: 1.12, duration: 0.4)
+            SKAction.scaleY(to: 0.74, duration: 0.4),
+            SKAction.scaleX(to: 1.12, duration: 0.4),
+            SKAction.moveTo(y: -6, duration: 0.4)
         ]))
-        headContainer.run(.moveTo(y: 6, duration: 0.4))
-        frontLeftPawNode.run(.moveTo(y: -24, duration: 0.4))
-        frontRightPawNode.run(.moveTo(y: -24, duration: 0.4))
+        headContainer.run(.moveTo(y: 3.5, duration: 0.4))
+        frontLeftPawNode.run(.group([SKAction.moveTo(y: -14.5, duration: 0.4), SKAction.fadeAlpha(to: 0.1, duration: 0.4)]))
+        frontRightPawNode.run(.group([SKAction.moveTo(y: -14.5, duration: 0.4), SKAction.fadeAlpha(to: 0.1, duration: 0.4)]))
 
-        tailBaseNode.run(.rotate(toAngle: 0.75, duration: 0.4))
-        tailSegment1.run(.rotate(toAngle: 0.5, duration: 0.4))
-        tailSegment2.run(.rotate(toAngle: 0.4, duration: 0.4))
+        tailBaseNode.run(.rotate(toAngle: 0.85, duration: 0.4))
+        tailSegment1.run(.rotate(toAngle: 0.55, duration: 0.4))
+        tailSegment2.run(.rotate(toAngle: 0.45, duration: 0.4))
 
-        // Closed sleepy crescent eyes
-        leftEyeNode.yScale = 0.07
-        rightEyeNode.yScale = 0.07
+        // Closed crescent peaceful eyes
+        leftEyeNode.yScale = 0.06
+        rightEyeNode.yScale = 0.06
 
-        // Slow deep sleep breathing rhythm
+        // Deep sleep breathing rhythm (slow 3.6s cycle)
         let sleepBreathe = SKAction.sequence([
-            SKAction.scaleY(to: 0.72, duration: 2.0),
-            SKAction.scaleY(to: 0.78, duration: 2.0)
+            SKAction.scaleY(to: 0.70, duration: 1.8),
+            SKAction.scaleY(to: 0.76, duration: 1.8)
         ])
         bodyContainer.run(.repeatForever(sleepBreathe), withKey: Self.catAnimKey)
 
-        // Soft floating Zzz particles with glow
+        // Occasional sleeping paw/whisker dream twitch
+        let dreamTwitch = SKAction.sequence([
+            .wait(forDuration: 5.0, withRange: 3.0),
+            .run { [weak self] in
+                self?.tailTipNode.run(SKAction.sequence([
+                    SKAction.moveBy(x: 1, y: 1, duration: 0.08),
+                    SKAction.moveBy(x: -1, y: -1, duration: 0.08)
+                ]))
+            }
+        ])
+        catRootNode.run(.repeatForever(dreamTwitch), withKey: Self.whiskerTwitchKey)
+
+        // Soft floating glowing Zzz bubbles
         let spawnZzz = SKAction.run { [weak self] in
             guard let self = self else { return }
             let zLabel = SKLabelNode(text: "z")
-            zLabel.fontSize = CGFloat.random(in: 11...14)
+            zLabel.fontSize = CGFloat.random(in: 8...11)
             zLabel.fontName = "HelveticaNeue-Bold"
             zLabel.fontColor = NSColor.systemIndigo.withAlphaComponent(0.85)
-            zLabel.position = CGPoint(x: 16, y: 18)
+            zLabel.position = CGPoint(x: 10, y: 11)
             zLabel.alpha = 0
             self.effectsContainer.addChild(zLabel)
 
             let floatUp = SKAction.group([
                 SKAction.fadeIn(withDuration: 0.3),
-                SKAction.moveBy(x: CGFloat.random(in: 10...18), y: 22, duration: 1.8),
-                SKAction.scale(to: 1.4, duration: 1.8)
+                SKAction.moveBy(x: CGFloat.random(in: 6...12), y: 15, duration: 1.8),
+                SKAction.scale(to: 1.35, duration: 1.8)
             ])
             floatUp.timingMode = .easeOut
             let fadeOut = SKAction.fadeOut(withDuration: 0.4)
             zLabel.run(SKAction.sequence([floatUp, fadeOut, .removeFromParent()]))
         }
 
-        let zzzLoop = SKAction.repeatForever(SKAction.sequence([spawnZzz, .wait(forDuration: 1.6)]))
+        let zzzLoop = SKAction.repeatForever(SKAction.sequence([spawnZzz, .wait(forDuration: 1.8)]))
         effectsContainer.run(zzzLoop)
     }
 
-    /// Picked-up / dragging animation: cute dangling cat with wiggling paws and dangling tail
+    /// Two-stage realistic cat stretch (front dip followed by back arch)
+    private func animateStretch(completion: (() -> Void)?) {
+        // Stage 1: Front dip stretch (lordosis)
+        let stretchFront = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            self.frontLeftPawNode.run(SKAction.moveBy(x: 6, y: -1, duration: 0.4))
+            self.frontRightPawNode.run(SKAction.moveBy(x: 6, y: -1, duration: 0.4))
+            self.headContainer.run(SKAction.moveBy(x: 3, y: -5, duration: 0.4))
+            self.bodyContainer.run(SKAction.rotate(toAngle: -0.16, duration: 0.4))
+            self.tailBaseNode.run(SKAction.rotate(toAngle: 0.55, duration: 0.4))
+        }
+
+        let holdFront = SKAction.wait(forDuration: 0.7)
+
+        // Stage 2: Back upward arch stretch
+        let stretchBack = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            self.frontLeftPawNode.run(SKAction.moveTo(y: -15, duration: 0.35))
+            self.frontRightPawNode.run(SKAction.moveTo(y: -15, duration: 0.35))
+            self.headContainer.run(SKAction.moveTo(y: 11, duration: 0.35))
+            self.bodyContainer.run(SKAction.group([
+                SKAction.rotate(toAngle: 0.12, duration: 0.35),
+                SKAction.scaleY(to: 1.15, duration: 0.35)
+            ]))
+            self.tailBaseNode.run(SKAction.rotate(toAngle: -0.35, duration: 0.35))
+        }
+
+        let holdBack = SKAction.wait(forDuration: 0.6)
+
+        // Reset to normal
+        let recover = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            self.headContainer.run(SKAction.moveTo(y: 9, duration: 0.3))
+            self.bodyContainer.run(SKAction.group([
+                SKAction.rotate(toAngle: 0, duration: 0.3),
+                SKAction.scaleY(to: 1.0, duration: 0.3)
+            ]))
+            self.tailBaseNode.run(SKAction.rotate(toAngle: 0, duration: 0.3))
+        }
+
+        let seq = SKAction.sequence([
+            stretchFront, holdFront,
+            stretchBack, holdBack,
+            recover, .wait(forDuration: 0.25),
+            .run { completion?() }
+        ])
+        catRootNode.run(seq, withKey: Self.catAnimKey)
+    }
+
+    /// Authentic face grooming (paw lick & ear wipe)
+    private func animateGroom(completion: (() -> Void)?) {
+        let raisePaw = SKAction.run { [weak self] in
+            self?.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -5, y: 8), duration: 0.22))
+            self?.headContainer.run(SKAction.rotate(toAngle: -0.10, duration: 0.22))
+        }
+        let lickPaw = SKAction.sequence([
+            SKAction.run { [weak self] in self?.tongueNode.isHidden = false },
+            .wait(forDuration: 0.14),
+            SKAction.run { [weak self] in self?.tongueNode.isHidden = true },
+            .wait(forDuration: 0.1)
+        ])
+        let wipeFace1 = SKAction.run { [weak self] in
+            self?.frontLeftPawNode.run(SKAction.moveBy(x: -3, y: 3, duration: 0.15))
+        }
+        let wipeFace2 = SKAction.run { [weak self] in
+            self?.frontLeftPawNode.run(SKAction.moveBy(x: 3, y: -3, duration: 0.15))
+        }
+        let lowerPaw = SKAction.run { [weak self] in
+            self?.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -6.5, y: -15), duration: 0.22))
+            self?.headContainer.run(SKAction.rotate(toAngle: 0, duration: 0.22))
+        }
+
+        let seq = SKAction.sequence([
+            raisePaw, .wait(forDuration: 0.2),
+            lickPaw, lickPaw,
+            wipeFace1, .wait(forDuration: 0.15), wipeFace2, .wait(forDuration: 0.15),
+            wipeFace1, .wait(forDuration: 0.15), wipeFace2, .wait(forDuration: 0.15),
+            lowerPaw, .wait(forDuration: 0.25),
+            .run { completion?() }
+        ])
+        catRootNode.run(seq, withKey: Self.catAnimKey)
+    }
+
+    private func animateYawn(completion: (() -> Void)?) {
+        let openMouth = SKAction.run { [weak self] in
+            self?.headContainer.run(SKAction.moveBy(x: 0, y: 2, duration: 0.25))
+            self?.mouthNode.run(SKAction.scale(to: 1.8, duration: 0.25))
+            self?.tongueNode.isHidden = false
+            self?.leftEyeNode.run(SKAction.scaleY(to: 0.08, duration: 0.25))
+            self?.rightEyeNode.run(SKAction.scaleY(to: 0.08, duration: 0.25))
+        }
+        let holdYawn = SKAction.wait(forDuration: 0.65)
+        let closeMouth = SKAction.run { [weak self] in
+            self?.headContainer.run(SKAction.moveTo(y: 9, duration: 0.25))
+            self?.mouthNode.run(SKAction.scale(to: 1.0, duration: 0.25))
+            self?.tongueNode.isHidden = true
+            self?.leftEyeNode.run(SKAction.scaleY(to: 1.0, duration: 0.2))
+            self?.rightEyeNode.run(SKAction.scaleY(to: 1.0, duration: 0.2))
+        }
+
+        let seq = SKAction.sequence([
+            openMouth, holdYawn, closeMouth, .wait(forDuration: 0.2),
+            .run { completion?() }
+        ])
+        catRootNode.run(seq, withKey: Self.catAnimKey)
+    }
+
+    private func animatePounce(completion: (() -> Void)?) {
+        let crouch = SKAction.run { [weak self] in
+            self?.bodyContainer.run(SKAction.scaleY(to: 0.75, duration: 0.2))
+            self?.headContainer.run(SKAction.moveTo(y: 5, duration: 0.2))
+        }
+
+        // Butt wiggle preparation
+        let wiggleLeft = SKAction.rotate(toAngle: -0.07, duration: 0.07)
+        let wiggleRight = SKAction.rotate(toAngle: 0.07, duration: 0.07)
+        let buttWiggle = SKAction.repeat(SKAction.sequence([wiggleLeft, wiggleRight]), count: 4)
+
+        let springForward = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            self.catRootNode.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.moveBy(x: 12, y: 8, duration: 0.16),
+                    SKAction.scaleY(to: 1.15, duration: 0.16)
+                ]),
+                SKAction.group([
+                    SKAction.moveBy(x: 12, y: -8, duration: 0.16),
+                    SKAction.scaleY(to: 0.85, duration: 0.16)
+                ]),
+                SKAction.scaleY(to: 1.0, duration: 0.12)
+            ]))
+        }
+
+        let seq = SKAction.sequence([
+            crouch, .wait(forDuration: 0.2),
+            buttWiggle,
+            springForward, .wait(forDuration: 0.5),
+            .run { completion?() }
+        ])
+        catRootNode.run(seq, withKey: Self.catAnimKey)
+    }
+
+    private func animateCurious(completion: (() -> Void)?) {
+        let tiltHead = SKAction.run { [weak self] in
+            self?.headContainer.run(SKAction.rotate(toAngle: 0.25, duration: 0.3))
+            self?.leftPupilNode.run(SKAction.scale(to: 1.35, duration: 0.3))
+            self?.rightPupilNode.run(SKAction.scale(to: 1.35, duration: 0.3))
+            self?.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -5, y: -9), duration: 0.3))
+        }
+        let tapPaw = SKAction.sequence([
+            SKAction.run { [weak self] in self?.frontLeftPawNode.run(SKAction.moveTo(y: -13, duration: 0.14)) },
+            .wait(forDuration: 0.14),
+            SKAction.run { [weak self] in self?.frontLeftPawNode.run(SKAction.moveTo(y: -9, duration: 0.14)) },
+            .wait(forDuration: 0.14)
+        ])
+
+        let seq = SKAction.sequence([
+            tiltHead, .wait(forDuration: 0.4),
+            tapPaw, tapPaw,
+            .wait(forDuration: 0.6),
+            .run { completion?() }
+        ])
+        catRootNode.run(seq, withKey: Self.catAnimKey)
+    }
+
     private func animatePickedUp() {
-        // Lifted off ground: shrink & blur contact shadow
         shadowNode.run(SKAction.group([
-            SKAction.scale(to: 0.5, duration: 0.2),
-            SKAction.fadeAlpha(to: 0.12, duration: 0.2),
-            SKAction.moveTo(y: -42, duration: 0.2)
+            SKAction.scale(to: 0.45, duration: 0.2),
+            SKAction.fadeAlpha(to: 0.10, duration: 0.2),
+            SKAction.moveTo(y: -26, duration: 0.2)
         ]))
 
-        // Stretched dangling body
         bodyContainer.run(SKAction.group([
             SKAction.scaleY(to: 1.15, duration: 0.25),
             SKAction.scaleX(to: 0.88, duration: 0.25)
         ]))
-        headContainer.run(SKAction.moveTo(y: 19, duration: 0.25))
+        headContainer.run(SKAction.moveTo(y: 12, duration: 0.25))
 
-        // Wide curious eyes
         leftPupilNode.run(SKAction.scale(to: 1.35, duration: 0.2))
         rightPupilNode.run(SKAction.scale(to: 1.35, duration: 0.2))
 
-        // Cute paw dangling & squirming
         let wiggle1 = SKAction.run { [weak self] in
             guard let self = self else { return }
-            self.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -14, y: -30), duration: 0.2))
-            self.frontRightPawNode.run(SKAction.move(to: CGPoint(x: 10, y: -27), duration: 0.2))
-            self.backLeftPawNode.run(SKAction.move(to: CGPoint(x: -20, y: -29), duration: 0.2))
-            self.backRightPawNode.run(SKAction.move(to: CGPoint(x: 16, y: -32), duration: 0.2))
-            self.catRootNode.run(SKAction.rotate(toAngle: -0.06, duration: 0.2))
+            self.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -9, y: -19), duration: 0.2))
+            self.frontRightPawNode.run(SKAction.move(to: CGPoint(x: 6, y: -17), duration: 0.2))
+            self.backLeftPawNode.run(SKAction.move(to: CGPoint(x: -13, y: -18), duration: 0.2))
+            self.backRightPawNode.run(SKAction.move(to: CGPoint(x: 10, y: -20), duration: 0.2))
+            self.catRootNode.run(SKAction.rotate(toAngle: -0.05, duration: 0.2))
         }
         let wiggle2 = SKAction.run { [weak self] in
             guard let self = self else { return }
-            self.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -10, y: -27), duration: 0.2))
-            self.frontRightPawNode.run(SKAction.move(to: CGPoint(x: 14, y: -30), duration: 0.2))
-            self.backLeftPawNode.run(SKAction.move(to: CGPoint(x: -16, y: -32), duration: 0.2))
-            self.backRightPawNode.run(SKAction.move(to: CGPoint(x: 20, y: -29), duration: 0.2))
-            self.catRootNode.run(SKAction.rotate(toAngle: 0.06, duration: 0.2))
+            self.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -6, y: -17), duration: 0.2))
+            self.frontRightPawNode.run(SKAction.move(to: CGPoint(x: 9, y: -19), duration: 0.2))
+            self.backLeftPawNode.run(SKAction.move(to: CGPoint(x: -10, y: -20), duration: 0.2))
+            self.backRightPawNode.run(SKAction.move(to: CGPoint(x: 13, y: -18), duration: 0.2))
+            self.catRootNode.run(SKAction.rotate(toAngle: 0.05, duration: 0.2))
         }
 
         let wiggleLoop = SKAction.repeatForever(SKAction.sequence([
@@ -696,38 +900,35 @@ final class DoraCharacter: SKNode {
         ]))
         catRootNode.run(wiggleLoop, withKey: Self.pawWiggleKey)
 
-        // Hanging tail
         tailBaseNode.run(SKAction.rotate(toAngle: -0.45, duration: 0.3))
         tailSegment1.run(SKAction.rotate(toAngle: -0.2, duration: 0.3))
     }
 
-    /// Landing bounce after being dropped or completing a jump
     private func animateLanding(completion: (() -> Void)?) {
         shadowNode.run(SKAction.group([
             SKAction.scale(to: 1.0, duration: 0.15),
-            SKAction.fadeAlpha(to: 0.28, duration: 0.15),
-            SKAction.moveTo(y: -27, duration: 0.15)
+            SKAction.fadeAlpha(to: 0.24, duration: 0.15),
+            SKAction.moveTo(y: -16, duration: 0.15)
         ]))
 
-        // Elastic landing squash & recover
         let squash = SKAction.group([
-            SKAction.scaleY(to: 0.72, duration: 0.12),
-            SKAction.scaleX(to: 1.22, duration: 0.12),
-            SKAction.moveBy(x: 0, y: -6, duration: 0.12)
+            SKAction.scaleY(to: 0.74, duration: 0.12),
+            SKAction.scaleX(to: 1.20, duration: 0.12),
+            SKAction.moveBy(x: 0, y: -4, duration: 0.12)
         ])
         squash.timingMode = .easeOut
 
         let rebound = SKAction.group([
-            SKAction.scaleY(to: 1.08, duration: 0.16),
-            SKAction.scaleX(to: 0.94, duration: 0.16),
-            SKAction.moveBy(x: 0, y: 8, duration: 0.16)
+            SKAction.scaleY(to: 1.06, duration: 0.15),
+            SKAction.scaleX(to: 0.95, duration: 0.15),
+            SKAction.moveBy(x: 0, y: 5, duration: 0.15)
         ])
         rebound.timingMode = .easeInEaseOut
 
         let settle = SKAction.group([
-            SKAction.scaleY(to: 1.0, duration: 0.14),
-            SKAction.scaleX(to: 1.0, duration: 0.14),
-            SKAction.moveBy(x: 0, y: -2, duration: 0.14)
+            SKAction.scaleY(to: 1.0, duration: 0.12),
+            SKAction.scaleX(to: 1.0, duration: 0.12),
+            SKAction.moveBy(x: 0, y: -1, duration: 0.12)
         ])
         settle.timingMode = .easeInEaseOut
 
@@ -743,191 +944,40 @@ final class DoraCharacter: SKNode {
     }
 
     private func animateJump() {
-        // Stretched upward pose for leaps
         bodyContainer.run(SKAction.group([
-            SKAction.scaleY(to: 1.25, duration: 0.2),
-            SKAction.scaleX(to: 0.85, duration: 0.2)
+            SKAction.scaleY(to: 1.22, duration: 0.18),
+            SKAction.scaleX(to: 0.86, duration: 0.18)
         ]))
-        frontLeftPawNode.run(SKAction.moveTo(y: -15, duration: 0.2))
-        frontRightPawNode.run(SKAction.moveTo(y: -15, duration: 0.2))
-        backLeftPawNode.run(SKAction.moveTo(y: -30, duration: 0.2))
-        backRightPawNode.run(SKAction.moveTo(y: -30, duration: 0.2))
-        tailBaseNode.run(SKAction.rotate(toAngle: 0.5, duration: 0.2))
-    }
-
-    private func animatePounce(completion: (() -> Void)?) {
-        // Classic cat butt wiggle before pounce!
-        let crouch = SKAction.run { [weak self] in
-            self?.bodyContainer.run(SKAction.scaleY(to: 0.75, duration: 0.25))
-            self?.headContainer.run(SKAction.moveTo(y: 8, duration: 0.25))
-        }
-
-        let wiggleLeft = SKAction.rotate(toAngle: -0.08, duration: 0.08)
-        let wiggleRight = SKAction.rotate(toAngle: 0.08, duration: 0.08)
-        let buttWiggle = SKAction.repeat(SKAction.sequence([wiggleLeft, wiggleRight]), count: 4)
-
-        let springForward = SKAction.run { [weak self] in
-            guard let self = self else { return }
-            self.catRootNode.run(SKAction.sequence([
-                SKAction.group([
-                    SKAction.moveBy(x: 18, y: 12, duration: 0.18),
-                    SKAction.scaleY(to: 1.15, duration: 0.18)
-                ]),
-                SKAction.group([
-                    SKAction.moveBy(x: 18, y: -12, duration: 0.18),
-                    SKAction.scaleY(to: 0.85, duration: 0.18)
-                ]),
-                SKAction.scaleY(to: 1.0, duration: 0.15)
-            ]))
-        }
-
-        let seq = SKAction.sequence([
-            crouch, .wait(forDuration: 0.25),
-            buttWiggle,
-            springForward, .wait(forDuration: 0.6),
-            .run { completion?() }
-        ])
-        catRootNode.run(seq, withKey: Self.catAnimKey)
-    }
-
-    private func animateCurious(completion: (() -> Void)?) {
-        // Head tilted curiously + paw tap
-        let tiltHead = SKAction.run { [weak self] in
-            self?.headContainer.run(SKAction.rotate(toAngle: 0.28, duration: 0.35))
-            self?.leftPupilNode.run(SKAction.scale(to: 1.3, duration: 0.3))
-            self?.rightPupilNode.run(SKAction.scale(to: 1.3, duration: 0.3))
-            self?.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -8, y: -16), duration: 0.3))
-        }
-        let tapPaw = SKAction.sequence([
-            SKAction.run { [weak self] in self?.frontLeftPawNode.run(SKAction.moveTo(y: -22, duration: 0.15)) },
-            .wait(forDuration: 0.15),
-            SKAction.run { [weak self] in self?.frontLeftPawNode.run(SKAction.moveTo(y: -16, duration: 0.15)) },
-            .wait(forDuration: 0.15)
-        ])
-
-        let seq = SKAction.sequence([
-            tiltHead, .wait(forDuration: 0.5),
-            tapPaw, tapPaw,
-            .wait(forDuration: 0.8),
-            .run { completion?() }
-        ])
-        catRootNode.run(seq, withKey: Self.catAnimKey)
-    }
-
-    private func animateWake(completion: (() -> Void)?) {
-        let openEyes = SKAction.run { [weak self] in
-            self?.leftEyeNode.run(.scaleY(to: 1.0, duration: 0.2))
-            self?.rightEyeNode.run(.scaleY(to: 1.0, duration: 0.2))
-        }
-        let stretch = SKAction.sequence([
-            openEyes,
-            .moveBy(x: 0, y: 6, duration: 0.25),
-            .moveBy(x: 0, y: -6, duration: 0.25)
-        ])
-        if let completion = completion {
-            catRootNode.run(.sequence([stretch, .run(completion)]), withKey: Self.catAnimKey)
-        } else {
-            catRootNode.run(stretch, withKey: Self.catAnimKey)
-        }
-    }
-
-    private func animateStretch(completion: (() -> Void)?) {
-        // Feline morning yoga stretch
-        let stretchFront = SKAction.run { [weak self] in
-            guard let self = self else { return }
-            self.frontLeftPawNode.run(.moveBy(x: 10, y: -2, duration: 0.45))
-            self.frontRightPawNode.run(.moveBy(x: 10, y: -2, duration: 0.45))
-            self.headContainer.run(.moveBy(x: 6, y: -8, duration: 0.45))
-            self.bodyContainer.run(.rotate(toAngle: -0.18, duration: 0.45))
-            self.tailBaseNode.run(.rotate(toAngle: 0.55, duration: 0.45))
-        }
-        let hold = SKAction.wait(forDuration: 0.85)
-        let recover = SKAction.run { [weak self] in
-            guard let self = self else { return }
-            self.frontLeftPawNode.run(.moveTo(y: -25, duration: 0.4))
-            self.frontRightPawNode.run(.moveTo(y: -25, duration: 0.4))
-            self.headContainer.run(.moveTo(y: 15, duration: 0.4))
-            self.bodyContainer.run(.rotate(toAngle: 0, duration: 0.4))
-            self.tailBaseNode.run(.rotate(toAngle: 0, duration: 0.4))
-        }
-        let seq = SKAction.sequence([
-            stretchFront, hold, recover, .wait(forDuration: 0.3),
-            .run { completion?() }
-        ])
-        catRootNode.run(seq, withKey: Self.catAnimKey)
-    }
-
-    private func animateGroom(completion: (() -> Void)?) {
-        let raisePaw = SKAction.run { [weak self] in
-            self?.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -8, y: 14), duration: 0.25))
-            self?.headContainer.run(SKAction.rotate(toAngle: -0.12, duration: 0.25))
-        }
-        let lickWipe1 = SKAction.run { [weak self] in
-            self?.frontLeftPawNode.run(.moveBy(x: -4, y: 4, duration: 0.15))
-        }
-        let lickWipe2 = SKAction.run { [weak self] in
-            self?.frontLeftPawNode.run(.moveBy(x: 4, y: -4, duration: 0.15))
-        }
-        let lowerPaw = SKAction.run { [weak self] in
-            self?.frontLeftPawNode.run(SKAction.move(to: CGPoint(x: -11, y: -25), duration: 0.25))
-            self?.headContainer.run(SKAction.rotate(toAngle: 0, duration: 0.25))
-        }
-
-        let seq = SKAction.sequence([
-            raisePaw, .wait(forDuration: 0.25),
-            lickWipe1, .wait(forDuration: 0.15), lickWipe2, .wait(forDuration: 0.15),
-            lickWipe1, .wait(forDuration: 0.15), lickWipe2, .wait(forDuration: 0.15),
-            lowerPaw, .wait(forDuration: 0.3),
-            .run { completion?() }
-        ])
-        catRootNode.run(seq, withKey: Self.catAnimKey)
-    }
-
-    private func animateYawn(completion: (() -> Void)?) {
-        let openMouth = SKAction.run { [weak self] in
-            self?.headContainer.run(.moveBy(x: 0, y: 3, duration: 0.3))
-            self?.mouthNode.run(.scale(to: 2.0, duration: 0.3))
-            self?.leftEyeNode.run(.scaleY(to: 0.1, duration: 0.3))
-            self?.rightEyeNode.run(.scaleY(to: 0.1, duration: 0.3))
-        }
-        let holdYawn = SKAction.wait(forDuration: 0.75)
-        let closeMouth = SKAction.run { [weak self] in
-            self?.headContainer.run(.moveTo(y: 15, duration: 0.3))
-            self?.mouthNode.run(.scale(to: 1.0, duration: 0.3))
-            self?.leftEyeNode.run(.scaleY(to: 1.0, duration: 0.2))
-            self?.rightEyeNode.run(.scaleY(to: 1.0, duration: 0.2))
-        }
-
-        let seq = SKAction.sequence([
-            openMouth, holdYawn, closeMouth, .wait(forDuration: 0.2),
-            .run { completion?() }
-        ])
-        catRootNode.run(seq, withKey: Self.catAnimKey)
+        frontLeftPawNode.run(SKAction.moveTo(y: -9, duration: 0.18))
+        frontRightPawNode.run(SKAction.moveTo(y: -9, duration: 0.18))
+        backLeftPawNode.run(SKAction.moveTo(y: -19, duration: 0.18))
+        backRightPawNode.run(SKAction.moveTo(y: -19, duration: 0.18))
+        tailBaseNode.run(SKAction.rotate(toAngle: 0.45, duration: 0.18))
     }
 
     private func animateHappy(completion: (() -> Void)?) {
-        let bounceUp = SKAction.moveBy(x: 0, y: 8, duration: 0.14)
+        let bounceUp = SKAction.moveBy(x: 0, y: 5, duration: 0.13)
         bounceUp.timingMode = .easeOut
         let bounceDown = bounceUp.reversed()
         bounceDown.timingMode = .easeIn
         let bounce = SKAction.sequence([bounceUp, bounceDown])
 
-        animate3DTailWave(amplitude: 0.6, speed: 0.5)
+        animate3DTailWave(amplitude: 0.5, speed: 0.4)
 
         for i in 0..<3 {
-            let delay = Double(i) * 0.25
+            let delay = Double(i) * 0.22
             let spawn = SKAction.sequence([
                 .wait(forDuration: delay),
                 .run { [weak self] in
                     guard let self = self else { return }
                     let heart = SKLabelNode(text: "💖")
-                    heart.fontSize = 16
-                    heart.position = CGPoint(x: CGFloat.random(in: -18...18), y: 30)
+                    heart.fontSize = 12
+                    heart.position = CGPoint(x: CGFloat.random(in: -12...12), y: 18)
                     self.effectsContainer.addChild(heart)
                     let pop = SKAction.group([
-                        SKAction.moveBy(x: 0, y: 24, duration: 0.9),
-                        SKAction.fadeOut(withDuration: 0.9),
-                        SKAction.scale(to: 1.4, duration: 0.9)
+                        SKAction.moveBy(x: 0, y: 16, duration: 0.8),
+                        SKAction.fadeOut(withDuration: 0.8),
+                        SKAction.scale(to: 1.3, duration: 0.8)
                     ])
                     heart.run(SKAction.sequence([pop, .removeFromParent()]))
                 }
@@ -946,25 +996,42 @@ final class DoraCharacter: SKNode {
         catRootNode.run(.sequence([fourBounces, finishAction]), withKey: Self.catAnimKey)
     }
 
+    private func animateWake(completion: (() -> Void)?) {
+        let openEyes = SKAction.run { [weak self] in
+            self?.leftEyeNode.run(.scaleY(to: 1.0, duration: 0.2))
+            self?.rightEyeNode.run(.scaleY(to: 1.0, duration: 0.2))
+        }
+        let shake = SKAction.sequence([
+            openEyes,
+            .moveBy(x: 0, y: 4, duration: 0.2),
+            .moveBy(x: 0, y: -4, duration: 0.2)
+        ])
+        if let completion = completion {
+            catRootNode.run(.sequence([shake, .run(completion)]), withKey: Self.catAnimKey)
+        } else {
+            catRootNode.run(shake, withKey: Self.catAnimKey)
+        }
+    }
+
     private func animateThinking() {
-        headContainer.run(.rotate(toAngle: 0.16, duration: 0.4))
+        headContainer.run(.rotate(toAngle: 0.16, duration: 0.35))
         let thinkLabel = SKLabelNode(text: "💭")
-        thinkLabel.fontSize = 18
-        thinkLabel.position = CGPoint(x: 26, y: 36)
+        thinkLabel.fontSize = 13
+        thinkLabel.position = CGPoint(x: 16, y: 22)
         effectsContainer.addChild(thinkLabel)
 
         let pulse = SKAction.sequence([
-            .scale(to: 1.25, duration: 0.6),
+            .scale(to: 1.2, duration: 0.6),
             .scale(to: 0.9, duration: 0.6)
         ])
         thinkLabel.run(.repeatForever(pulse))
-        loopingBlink()
+        loopingFelineBlink()
     }
 
     private func animateConcerned() {
         let shiver = SKAction.sequence([
-            .rotate(toAngle: 0.05, duration: 0.08),
-            .rotate(toAngle: -0.05, duration: 0.08)
+            .rotate(toAngle: 0.04, duration: 0.08),
+            .rotate(toAngle: -0.04, duration: 0.08)
         ])
         catRootNode.run(.repeatForever(shiver), withKey: Self.catAnimKey)
     }
@@ -979,7 +1046,7 @@ final class DoraCharacter: SKNode {
 
     private func animateCelebrate(completion: (() -> Void)?) {
         let spin = SKAction.rotate(byAngle: .pi * 2, duration: 0.45)
-        let jump = SKAction.moveBy(x: 0, y: 22, duration: 0.25)
+        let jump = SKAction.moveBy(x: 0, y: 15, duration: 0.22)
         let jumpBack = jump.reversed()
         let action = SKAction.group([spin, .sequence([jump, jumpBack])])
         if let completion = completion {
@@ -989,7 +1056,7 @@ final class DoraCharacter: SKNode {
         }
     }
 
-    // MARK: - 3D Multi-Joint Tail Wave Helper
+    // MARK: - Sinuous Multi-Joint Tail Physics Wave
 
     private func animate3DTailWave(amplitude: CGFloat, speed: TimeInterval) {
         let waveLeft1 = SKAction.rotate(toAngle: amplitude, duration: speed)
@@ -1011,19 +1078,32 @@ final class DoraCharacter: SKNode {
         tailSegment2.run(.repeatForever(.sequence([waveLeft3, waveRight3])), withKey: Self.tailAnimKey)
     }
 
-    // MARK: - Blinking Helpers
+    // MARK: - Natural Feline Blinking (Slow affectionate blinks + quick blinks)
 
-    private func loopingBlink() {
-        let close = SKAction.scaleY(to: 0.08, duration: 0.06)
-        let open = SKAction.scaleY(to: 1.0, duration: 0.06)
-        let blink = SKAction.sequence([.wait(forDuration: 3.2, withRange: 2.2), close, open])
-        leftEyeNode.run(.repeatForever(blink), withKey: Self.blinkAnimKey)
-        rightEyeNode.run(.repeatForever(blink), withKey: Self.blinkAnimKey)
+    private func loopingFelineBlink() {
+        let quickClose = SKAction.scaleY(to: 0.08, duration: 0.05)
+        let quickOpen = SKAction.scaleY(to: 1.0, duration: 0.05)
+        let quickBlink = SKAction.sequence([quickClose, quickOpen])
+
+        // Feline slow trust blink
+        let slowClose = SKAction.scaleY(to: 0.10, duration: 0.25)
+        let holdClosed = SKAction.wait(forDuration: 0.20)
+        let slowOpen = SKAction.scaleY(to: 1.0, duration: 0.25)
+        let slowBlink = SKAction.sequence([slowClose, holdClosed, slowOpen])
+
+        let blinkRoutine = SKAction.sequence([
+            .wait(forDuration: 3.5, withRange: 2.0),
+            quickBlink,
+            .wait(forDuration: 4.5, withRange: 2.0),
+            slowBlink
+        ])
+        leftEyeNode.run(.repeatForever(blinkRoutine), withKey: Self.blinkAnimKey)
+        rightEyeNode.run(.repeatForever(blinkRoutine), withKey: Self.blinkAnimKey)
     }
 
     private func oneShotBlink(then completion: (() -> Void)?) {
-        let close = SKAction.scaleY(to: 0.08, duration: 0.06)
-        let open = SKAction.scaleY(to: 1.0, duration: 0.06)
+        let close = SKAction.scaleY(to: 0.08, duration: 0.05)
+        let open = SKAction.scaleY(to: 1.0, duration: 0.05)
         let sequence = completion != nil
             ? SKAction.sequence([close, open, .run(completion!)])
             : SKAction.sequence([close, open])
@@ -1031,3 +1111,4 @@ final class DoraCharacter: SKNode {
         rightEyeNode.run(sequence, withKey: Self.blinkAnimKey)
     }
 }
+
