@@ -60,11 +60,11 @@ final class DoraScene: SKScene {
         let deltaTime = min(max(rawDelta, 0), Self.maxDeltaTime)
         movementController?.update(deltaTime: deltaTime)
 
-        // Keep speech bubble anchored above cat
+        // Keep speech bubble anchored cleanly above cat
         if let dora = dora, let bubble = speechBubble {
             bubble.position = CGPoint(
                 x: dora.position.x,
-                y: dora.position.y + dora.size.height / 2 + 16
+                y: dora.position.y + dora.size.height / 2 + 10
             )
         }
 
@@ -117,10 +117,10 @@ final class DoraScene: SKScene {
         // 1. Cat Bounding Rect in Screen Coordinates
         if let dora = dora {
             let catSceneFrame = CGRect(
-                x: dora.position.x - dora.size.width / 2 - 10,
-                y: dora.position.y - dora.size.height / 2 - 10,
-                width: dora.size.width + 20,
-                height: dora.size.height + 20
+                x: dora.position.x - dora.size.width / 2 - 6,
+                y: dora.position.y - dora.size.height / 2 - 6,
+                width: dora.size.width + 12,
+                height: dora.size.height + 12
             )
             let catScreenRect = NSRect(
                 x: window.frame.minX + catSceneFrame.minX,
