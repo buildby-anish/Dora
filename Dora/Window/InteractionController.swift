@@ -27,10 +27,17 @@ final class InteractionController {
 
     private static let dragThreshold: CGFloat = 6.0
 
+    private var onCatDoubleClicked: (() -> Void)?
+    private var lastClickTime: TimeInterval = 0
+    private var lastDragPos: NSPoint = .zero
+    private var lastDragTime: TimeInterval = 0
+    private(set) var currentDragVelocity: CGVector = .zero
+
     init(
         window: NSWindow,
         interactiveRectsProvider: @escaping () -> [NSRect],
         onCatClicked: @escaping () -> Void,
+        onCatDoubleClicked: (() -> Void)? = nil,
         onCatDragStarted: @escaping (NSPoint) -> Void,
         onCatDragged: @escaping (NSPoint) -> Void,
         onCatDragEnded: @escaping (NSPoint) -> Void
@@ -38,6 +45,7 @@ final class InteractionController {
         self.window = window
         self.interactiveRectsProvider = interactiveRectsProvider
         self.onCatClicked = onCatClicked
+        self.onCatDoubleClicked = onCatDoubleClicked
         self.onCatDragStarted = onCatDragStarted
         self.onCatDragged = onCatDragged
         self.onCatDragEnded = onCatDragEnded
@@ -80,6 +88,7 @@ final class InteractionController {
 
     private func handleMouseEvent(_ event: NSEvent) {
         let point = NSEvent.mouseLocation
+        let now = ProcessInfo.processInfo.systemUptime
 
         switch event.type {
         case .mouseMoved:
@@ -92,6 +101,9 @@ final class InteractionController {
                 isTrackingPress = true
                 isDragging = false
                 mouseDownPoint = point
+                lastDragPos = point
+                lastDragTime = now
+                currentDragVelocity = .zero
                 window?.ignoresMouseEvents = false
             }
 
@@ -106,6 +118,16 @@ final class InteractionController {
                         isDragging = true
                         onCatDragStarted?(point)
                     }
+
+                    // Calculate drag velocity for realistic physical tilt
+                    let dt = max(0.001, now - lastDragTime)
+                    currentDragVelocity = CGVector(
+                        dx: (point.x - lastDragPos.x) / CGFloat(dt),
+                        dy: (point.y - lastDragPos.y) / CGFloat(dt)
+                    )
+                    lastDragPos = point
+                    lastDragTime = now
+
                     onCatDragged?(point)
                 }
             }
@@ -113,12 +135,19 @@ final class InteractionController {
         case .leftMouseUp:
             if isTrackingPress {
                 isTrackingPress = false
+                currentDragVelocity = .zero
                 if isDragging {
                     isDragging = false
                     onCatDragEnded?(point)
                 } else {
-                    // It was a click / tap! Open chat text box
-                    onCatClicked?()
+                    // Check for double click / pet vs single click
+                    if now - lastClickTime < 0.35 {
+                        onCatDoubleClicked?()
+                        lastClickTime = 0
+                    } else {
+                        lastClickTime = now
+                        onCatClicked?()
+                    }
                 }
                 handleMouseHover(screenPoint: point)
             }
