@@ -412,6 +412,57 @@ final class DoraCharacter: SKNode {
         runCatAnimation(for: animation, completion: completion)
     }
 
+    // MARK: - Interactive Feline Gaze Tracking
+
+    /// Dynamically shifts pupils and angles head toward nearby points (e.g. mouse cursor)
+    func updateGaze(targetPoint: CGPoint) {
+        guard currentAnimation.allowsEyeTracking else { return }
+
+        let dx = targetPoint.x - position.x
+        let dy = targetPoint.y - position.y
+        let dist = hypot(dx, dy)
+
+        // Only track when cursor is reasonably close (< 450pt)
+        if dist < 450 && dist > 15 {
+            let normX = max(-1.0, min(1.0, (dx / 200.0) * catRootNode.xScale))
+            let normY = max(-0.8, min(0.8, dy / 200.0))
+
+            let maxPupilShiftX: CGFloat = 1.6
+            let maxPupilShiftY: CGFloat = 2.0
+
+            leftPupilNode.position = CGPoint(x: normX * maxPupilShiftX, y: normY * maxPupilShiftY)
+            rightPupilNode.position = CGPoint(x: normX * maxPupilShiftX, y: normY * maxPupilShiftY)
+
+            // Subtle head inclination
+            let headTilt = max(-0.12, min(0.12, (dx / 400.0) * catRootNode.xScale))
+            headContainer.zRotation = headTilt
+        } else {
+            leftPupilNode.position = .zero
+            rightPupilNode.position = .zero
+            headContainer.zRotation = 0
+        }
+    }
+
+    // MARK: - Dynamic Landing FX
+
+    private func spawnLandingPuff() {
+        for i in 0..<4 {
+            let puff = SKShapeNode(circleOfRadius: CGFloat.random(in: 1.2...2.2))
+            puff.fillColor = NSColor(white: 0.85, alpha: 0.6)
+            puff.strokeColor = .clear
+            let xOffset = (i % 2 == 0 ? -1.0 : 1.0) * CGFloat.random(in: 6...14)
+            puff.position = CGPoint(x: xOffset, y: -16)
+            effectsContainer.addChild(puff)
+
+            let floatPuff = SKAction.group([
+                SKAction.moveBy(x: xOffset * 0.6, y: CGFloat.random(in: 4...8), duration: 0.35),
+                SKAction.fadeOut(withDuration: 0.35),
+                SKAction.scale(to: 1.8, duration: 0.35)
+            ])
+            puff.run(SKAction.sequence([floatPuff, .removeFromParent()]))
+        }
+    }
+
     private func resetCatTransforms() {
         catRootNode.removeAction(forKey: Self.catAnimKey)
         catRootNode.removeAction(forKey: Self.pawWiggleKey)
@@ -910,6 +961,8 @@ final class DoraCharacter: SKNode {
             SKAction.fadeAlpha(to: 0.24, duration: 0.15),
             SKAction.moveTo(y: -16, duration: 0.15)
         ]))
+
+        spawnLandingPuff()
 
         let squash = SKAction.group([
             SKAction.scaleY(to: 0.74, duration: 0.12),
