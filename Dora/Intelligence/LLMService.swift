@@ -64,6 +64,29 @@ final class LLMService {
         catSuggestions.randomElement() ?? "Meow! Happy coding! 🐾"
     }
 
+    // MARK: - Emotion & Reaction Detection
+
+    /// Maps response text semantics to Dora character animations
+    func detectAnimation(for text: String) -> DoraAnimation {
+        let lower = text.lowercased()
+        if lower.contains("happy") || lower.contains("purr") || lower.contains("love") || lower.contains("💖") || lower.contains("❤️") {
+            return .happy
+        } else if lower.contains("celebrat") || lower.contains("yay") || lower.contains("awesome") || lower.contains("hooray") || lower.contains("party") {
+            return .celebrate
+        } else if lower.contains("think") || lower.contains("wonder") || lower.contains("hmm") || lower.contains("let's see") {
+            return .thinking
+        } else if lower.contains("curious") || lower.contains("what") || lower.contains("how") || lower.contains("?") {
+            return .curious
+        } else if lower.contains("stretch") || lower.contains("break") || lower.contains("rest") {
+            return .stretch
+        } else if lower.contains("sleep") || lower.contains("tired") || lower.contains("yawn") {
+            return .yawn
+        } else if lower.contains("error") || lower.contains("bug") || lower.contains("warn") {
+            return .concerned
+        }
+        return .idle
+    }
+
     // MARK: - Chat Query
 
     func sendMessage(_ userText: String, completion: @escaping (String) -> Void) {
