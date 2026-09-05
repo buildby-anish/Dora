@@ -327,25 +327,45 @@ final class ChatWindowController: NSWindowController, NSTextFieldDelegate {
     func showNear(screenPoint: NSPoint) {
         guard let window = window, let screen = NSScreen.main else { return }
 
-        var targetX = screenPoint.x + 50
-        var targetY = screenPoint.y + 40
+        var targetX = screenPoint.x + 40
+        var targetY = screenPoint.y + 30
 
         let screenFrame = screen.visibleFrame
         if targetX + window.frame.width > screenFrame.maxX {
-            targetX = screenPoint.x - window.frame.width - 50
+            targetX = screenPoint.x - window.frame.width - 40
         }
         if targetY + window.frame.height > screenFrame.maxY {
             targetY = screenFrame.maxY - window.frame.height - 20
         }
 
-        window.setFrameOrigin(NSPoint(x: targetX, y: targetY))
+        let startOrigin = NSPoint(x: targetX, y: targetY - 15)
+        let finalOrigin = NSPoint(x: targetX, y: targetY)
+
+        window.setFrameOrigin(startOrigin)
+        window.alphaValue = 0.0
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         window.makeFirstResponder(inputField)
+
+        // Smooth spring slide-up and fade-in animation
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.24
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            window.animator().setFrameOrigin(finalOrigin)
+            window.animator().alphaValue = 1.0
+        }
     }
 
     @objc func hidePanel() {
-        window?.orderOut(nil)
+        guard let window = window else { return }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.18
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            window.animator().alphaValue = 0.0
+        }, completionHandler: {
+            window.orderOut(nil)
+            window.alphaValue = 1.0
+        })
     }
 
     var isPanelVisible: Bool {
