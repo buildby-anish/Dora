@@ -52,4 +52,26 @@ enum ScreenCoordinator {
             height: visible.height
         )
     }
+
+    /// Finds the active screen currently containing a screen coordinate point
+    static func screenContaining(point: NSPoint) -> NSScreen {
+        for screen in NSScreen.screens {
+            if screen.frame.contains(point) {
+                return screen
+            }
+        }
+        return primaryScreen()
+    }
+
+    /// Returns key resting and perching spots (corners, Dock ledge) across the display
+    static func perchLocations(for screen: NSScreen, windowFrame: NSRect) -> [CGPoint] {
+        let bounds = walkableBounds(windowFrame: windowFrame, screen: screen)
+        let inset: CGFloat = 28
+        return [
+            CGPoint(x: bounds.maxX - inset, y: bounds.minY + inset), // Bottom-Right Dock area
+            CGPoint(x: bounds.minX + inset, y: bounds.minY + inset), // Bottom-Left
+            CGPoint(x: bounds.maxX - inset, y: bounds.maxY - inset), // Top-Right menu ledge
+            CGPoint(x: bounds.minX + inset, y: bounds.maxY - inset)  // Top-Left Apple logo area
+        ]
+    }
 }
