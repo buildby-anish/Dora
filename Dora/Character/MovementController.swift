@@ -306,7 +306,10 @@ final class MovementController {
         let dx = target.x - currentPosition.x
         let dy = target.y - currentPosition.y
         let dist = hypot(dx, dy)
-        let step = movementSpeed * CGFloat(deltaTime)
+
+        // Smooth feline deceleration near destination
+        let speedMultiplier: CGFloat = dist < 40 ? max(0.4, dist / 40.0) : 1.0
+        let step = movementSpeed * speedMultiplier * CGFloat(deltaTime)
 
         if dist <= step {
             currentPosition = target
@@ -349,6 +352,7 @@ final class MovementController {
             leapProgress = 1.0
             currentPosition = leapTargetPos
             character.position = currentPosition
+            character.zRotation = 0
             state = .idle
 
             character.play(.landing) { [weak self, weak character] in
@@ -363,6 +367,11 @@ final class MovementController {
         let currentX = leapStartPos.x + (leapTargetPos.x - leapStartPos.x) * t
         let linearY = leapStartPos.y + (leapTargetPos.y - leapStartPos.y) * t
         let arcY = 4.0 * leapPeakHeight * t * (1.0 - t)
+
+        // Dynamic feline pitch angle during leap trajectory
+        let dirSign: CGFloat = facingDirection == .right ? 1.0 : -1.0
+        let leapPitch = (0.5 - t) * 0.45 * dirSign
+        character.zRotation = leapPitch
 
         currentPosition = CGPoint(x: currentX, y: linearY + arcY)
         character.position = currentPosition
