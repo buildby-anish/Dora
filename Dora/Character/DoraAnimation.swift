@@ -94,4 +94,79 @@ enum DoraAnimation: String, CaseIterable {
             return true
         }
     }
+
+    /// Smooth cross-fade blending duration when transitioning to this animation
+    var transitionBlendDuration: TimeInterval {
+        switch self {
+        case .landing, .pounce: return 0.10
+        case .jump, .pickedUp: return 0.15
+        case .walkLeft, .walkRight: return 0.20
+        case .sit, .sleep: return 0.35
+        default: return 0.25
+        }
+    }
+
+    /// Natural feline anatomical squash & stretch baseline multiplier for this pose
+    var baselineSquashStretch: (scaleX: CGFloat, scaleY: CGFloat) {
+        switch self {
+        case .sit: return (1.08, 0.80)
+        case .sleep: return (1.12, 0.74)
+        case .jump: return (0.86, 1.22)
+        case .landing: return (1.20, 0.74)
+        case .pickedUp: return (0.88, 1.15)
+        case .stretch: return (0.95, 1.12)
+        default: return (1.0, 1.0)
+        }
+    }
+
+    /// Whether the cat's eyes will dynamically track the user's cursor while playing this animation
+    var allowsEyeTracking: Bool {
+        switch self {
+        case .sleep, .blink, .yawn, .groom:
+            return false
+        default:
+            return true
+        }
+    }
+
+    /// Animation priority level (higher priority animations cannot be interrupted by lower ones)
+    var priority: Int {
+        switch self {
+        case .pickedUp: return 100
+        case .landing: return 90
+        case .celebrate, .happy: return 80
+        case .wake, .stretch, .pounce: return 70
+        case .groom, .yawn: return 60
+        case .jump: return 50
+        case .walkLeft, .walkRight: return 40
+        case .sit, .sleep: return 30
+        case .thinking, .concerned, .charging: return 20
+        case .idle, .blink, .curious: return 10
+        }
+    }
+
+    /// Human-readable feline mood descriptor for intelligence integration
+    var felineMoodDescription: String {
+        switch self {
+        case .idle: return "relaxed and observant"
+        case .blink: return "slow affectionate blinking"
+        case .walkLeft, .walkRight: return "trotting curiously"
+        case .sit: return "cozy loafing"
+        case .sleep: return "peacefully dreaming"
+        case .wake: return "gently waking up"
+        case .stretch: return "deep cat stretching"
+        case .groom: return "washing face with paw"
+        case .yawn: return "big sleepy yawn"
+        case .thinking: return "pondering thoughts"
+        case .happy: return "purring with joy"
+        case .concerned: return "alert and watching"
+        case .charging: return "gathering cat energy"
+        case .celebrate: return "celebrating excitedly"
+        case .pickedUp: return "dangling in mid-air"
+        case .landing: return "springy soft landing"
+        case .jump: return "gracefully leaping"
+        case .pounce: return "pouncing playfully"
+        case .curious: return "inquisitive head tilt"
+        }
+    }
 }
