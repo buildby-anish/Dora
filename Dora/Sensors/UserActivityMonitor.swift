@@ -12,12 +12,21 @@ import CoreGraphics
 
 final class UserActivityMonitor {
 
+    enum ActivityLevel {
+        case activeWork
+        case microBreak
+        case deepIdle
+    }
+
     var idleThresholdSeconds: TimeInterval = 60.0 // 1 minute idle requirement
+    var deepIdleThresholdSeconds: TimeInterval = 300.0 // 5 minutes deep idle
 
     var onUserBecameIdle: (() -> Void)?
     var onUserResumedActivity: (() -> Void)?
+    var onActivityLevelChanged: ((ActivityLevel) -> Void)?
 
     private(set) var isUserCurrentlyIdle: Bool = false
+    private(set) var currentActivityLevel: ActivityLevel = .activeWork
     private var timer: Timer?
 
     init() {
@@ -41,9 +50,29 @@ final class UserActivityMonitor {
         timer = nil
     }
 
+    /// Returns current system-wide idle seconds
+    var currentIdleTime: TimeInterval {
+        CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
+    }
+
     private func checkIdleState() {
-        // CGEventSource measures seconds since last user input across the entire macOS system
-        let idleTime = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
+        let idleTime = currentIdleTime
+
+        let newLevel: ActivityLevel
+        if idleTime >= deepIdleThresholdSeconds {
+            newLevel = .deepIdle
+        } else if idleTime >= idleThresholdSeconds {
+            newLevel = .microBreak
+        } else {
+            newLevel = .activeWork
+        }
+
+        if newLevel != currentActivityLevel {
+            currentActivityLevel = newLevel
+            DispatchQueue.main.async { [weak self] in
+                self?.onActivityLevelChanged?(newLevel)
+            }
+        }
 
         if idleTime >= idleThresholdSeconds {
             if !isUserCurrentlyIdle {
