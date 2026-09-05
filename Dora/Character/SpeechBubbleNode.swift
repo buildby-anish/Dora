@@ -83,15 +83,32 @@ final class SpeechBubbleNode: SKNode {
         textLabel.position = CGPoint(x: 0, y: bubbleHeight / 2)
 
         self.isHidden = false
-        self.setScale(0.7)
+        self.setScale(0.6)
         self.alpha = 0
 
-        let appear = SKAction.group([
-            SKAction.fadeIn(withDuration: 0.2),
-            SKAction.scale(to: 1.0, duration: 0.2)
+        // Elastic spring pop-in with overshoot
+        let pop1 = SKAction.group([
+            SKAction.fadeIn(withDuration: 0.15),
+            SKAction.scale(to: 1.08, duration: 0.18)
         ])
-        appear.timingMode = .easeOut
-        run(appear)
+        pop1.timingMode = .easeOut
+
+        let pop2 = SKAction.scale(to: 0.96, duration: 0.12)
+        pop2.timingMode = .easeInEaseOut
+
+        let pop3 = SKAction.scale(to: 1.0, duration: 0.10)
+        pop3.timingMode = .easeOut
+
+        // Gentle ambient floating bob
+        let bobUp = SKAction.moveBy(x: 0, y: 2.5, duration: 1.2)
+        bobUp.timingMode = .easeInEaseOut
+        let bobDown = SKAction.moveBy(x: 0, y: -2.5, duration: 1.2)
+        bobDown.timingMode = .easeInEaseOut
+        let bobLoop = SKAction.repeatForever(SKAction.sequence([bobUp, bobDown]))
+
+        run(SKAction.sequence([pop1, pop2, pop3, SKAction.run { [weak self] in
+            self?.run(bobLoop, withKey: "floatingBob")
+        }]))
 
         if autoDismissAfter > 0 {
             let wait = SKAction.wait(forDuration: autoDismissAfter)
@@ -103,9 +120,10 @@ final class SpeechBubbleNode: SKNode {
     }
 
     func hideMessage() {
+        removeAction(forKey: "floatingBob")
         let disappear = SKAction.group([
-            SKAction.fadeOut(withDuration: 0.25),
-            SKAction.scale(to: 0.7, duration: 0.25)
+            SKAction.fadeOut(withDuration: 0.22),
+            SKAction.scale(to: 0.6, duration: 0.22)
         ])
         disappear.timingMode = .easeIn
         run(SKAction.sequence([disappear, SKAction.run { [weak self] in
