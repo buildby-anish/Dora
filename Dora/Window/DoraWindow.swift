@@ -70,6 +70,8 @@ final class DoraWindow: NSWindow {
         // Click-through is ENABLED by default so the entire desktop is accessible.
         // InteractionController will selectively disable this when hovering near the cat.
         ignoresMouseEvents = true
+        animationBehavior = .none
+        sharingType = .readOnly
     }
 
     // Borderless windows normally can't become key/main, which would
@@ -78,4 +80,25 @@ final class DoraWindow: NSWindow {
     // in later stages), so both are opted into here.
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    /// Smoothly transitions the desktop overlay visibility
+    func smoothFadeIn(duration: TimeInterval = 0.3) {
+        alphaValue = 0.0
+        orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = duration
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            animator().alphaValue = 1.0
+        }
+    }
+
+    func smoothFadeOut(duration: TimeInterval = 0.25, completion: (() -> Void)? = nil) {
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = duration
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            animator().alphaValue = 0.0
+        }, completionHandler: {
+            completion?()
+        })
+    }
 }
