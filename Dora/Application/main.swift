@@ -31,4 +31,13 @@ app.delegate = delegate
 // and makes the intent explicit in code.
 app.setActivationPolicy(.accessory)
 
+// Configure smooth animation runtime environment
+UserDefaults.standard.register(defaults: [
+    "NSApplicationCrashOnExceptions": true
+])
+
+#if DEBUG
+print("🐱 [Dora] Initialized 3D Procedural Companion — Starting AppKit Loop")
+#endif
+
 app.run()
