@@ -60,12 +60,23 @@ final class DoraScene: SKScene {
         let deltaTime = min(max(rawDelta, 0), Self.maxDeltaTime)
         movementController?.update(deltaTime: deltaTime)
 
-        // Keep speech bubble anchored cleanly above cat
+        // Dynamic mouse cursor eye gaze tracking
+        if let window = view?.window {
+            let mouseScreenPos = NSEvent.mouseLocation
+            let mouseScenePos = CGPoint(
+                x: mouseScreenPos.x - window.frame.minX,
+                y: mouseScreenPos.y - window.frame.minY
+            )
+            dora?.updateGaze(targetPoint: mouseScenePos)
+        }
+
+        // Keep speech bubble anchored cleanly above cat with smooth spring
         if let dora = dora, let bubble = speechBubble {
-            bubble.position = CGPoint(
+            let targetBubblePos = CGPoint(
                 x: dora.position.x,
                 y: dora.position.y + dora.size.height / 2 + 10
             )
+            bubble.position = targetBubblePos
         }
 
         // Periodic proactive tips/suggestions (only while roaming/idle, not while sleeping)
@@ -78,6 +89,12 @@ final class DoraScene: SKScene {
                 speechBubble?.showMessage(tip, autoDismissAfter: 7.0)
             }
         }
+    }
+
+    /// Triggered when user pets or clicks Dora
+    func handlePetting() {
+        dora?.play(.happy)
+        speechBubble?.showMessage("Purrrrrr~ ❤️🐾", autoDismissAfter: 3.5)
     }
 
     func userBecameIdle() {
