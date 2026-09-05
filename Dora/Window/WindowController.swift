@@ -25,12 +25,13 @@ final class WindowController: NSWindowController {
 
         let view = SKView(frame: NSRect(origin: .zero, size: frame.size))
         view.allowsTransparency = true
-        // Stage 1 has almost nothing on screen; debug stats are handy
-        // during bring-up and cheap to leave in for now. These should
-        // be gated behind a debug build flag before shipping.
+        view.preferredFramesPerSecond = 120
+        view.ignoresSiblingOrder = true
+        view.shouldCullNonVisibleNodes = true
+
         #if DEBUG
-        view.showsFPS = true
-        view.showsNodeCount = true
+        view.showsFPS = false
+        view.showsNodeCount = false
         #endif
 
         let doraScene = DoraScene(size: frame.size)
@@ -54,6 +55,14 @@ final class WindowController: NSWindowController {
         guard let window else { return }
         window.setFrame(ScreenCoordinator.fullFrame(for: ScreenCoordinator.primaryScreen()), display: true)
         window.orderFrontRegardless()
+    }
+
+    /// Re-aligns the window and scene when display resolution or multi-monitor arrangement changes
+    func reconfigureForScreen(_ screen: NSScreen) {
+        let frame = ScreenCoordinator.fullFrame(for: screen)
+        window?.setFrame(frame, display: true)
+        skView.frame = NSRect(origin: .zero, size: frame.size)
+        scene.size = frame.size
     }
 
     func closeWindow() {
