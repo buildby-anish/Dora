@@ -17,6 +17,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let coordinator = ApplicationCoordinator()
         self.coordinator = coordinator
         coordinator.start()
+
+        setupSystemSleepObservers()
+    }
+
+    private func setupSystemSleepObservers() {
+        let center = NSWorkspace.shared.notificationCenter
+        center.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            #if DEBUG
+            print("[Dora] Mac going to sleep — Dora entering deep sleep")
+            #endif
+        }
+
+        center.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            #if DEBUG
+            print("[Dora] Mac woke up — Dora waking and stretching")
+            #endif
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -29,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
         coordinator?.stop()
     }
 }
