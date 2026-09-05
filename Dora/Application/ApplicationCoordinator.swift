@@ -44,6 +44,9 @@ final class ApplicationCoordinator {
                     let catPos = scene.catScreenPosition()
                     self.chatWindowController?.showNear(screenPoint: catPos)
                 },
+                onCatDoubleClicked: { [weak scene] in
+                    scene?.handlePetting()
+                },
                 onCatDragStarted: { [weak scene] point in
                     scene?.startDrag(at: point)
                 },
@@ -54,6 +57,16 @@ final class ApplicationCoordinator {
                     scene?.endDrag(at: point)
                 }
             )
+        }
+
+        // Handle display changes (plugging in external monitors or changing resolution)
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            let current = ScreenCoordinator.primaryScreen()
+            self?.windowController?.reconfigureForScreen(current)
         }
 
         let monitor = UserActivityMonitor()
