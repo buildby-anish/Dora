@@ -111,4 +111,42 @@ final class AnimationManager {
         textureCache.removeAll()
         missingAtlasWarningsIssued.removeAll()
     }
+
+    // MARK: - Procedural Spring & Easing Utilities
+
+    /// Generates a natural spring overshoot SKAction for organic bounces
+    static func springScale(to target: CGFloat, duration: TimeInterval = 0.3, damping: CGFloat = 0.15) -> SKAction {
+        let overshoot = target + damping
+        let step1 = SKAction.scale(to: overshoot, duration: duration * 0.55)
+        step1.timingMode = .easeOut
+        let step2 = SKAction.scale(to: target - (damping * 0.4), duration: duration * 0.25)
+        step2.timingMode = .easeInEaseOut
+        let step3 = SKAction.scale(to: target, duration: duration * 0.20)
+        step3.timingMode = .easeOut
+        return SKAction.sequence([step1, step2, step3])
+    }
+
+    /// Generates a smooth sine wave respiratory cycle
+    static func breathingAction(scaleYRange: (CGFloat, CGFloat) = (0.98, 1.03), duration: TimeInterval = 1.4) -> SKAction {
+        let inhale = SKAction.group([
+            SKAction.scaleY(to: scaleYRange.1, duration: duration),
+            SKAction.scaleX(to: 2.0 - scaleYRange.1, duration: duration)
+        ])
+        inhale.timingMode = .easeInEaseOut
+
+        let exhale = SKAction.group([
+            SKAction.scaleY(to: scaleYRange.0, duration: duration),
+            SKAction.scaleX(to: 2.0 - scaleYRange.0, duration: duration)
+        ])
+        exhale.timingMode = .easeInEaseOut
+
+        return SKAction.repeatForever(SKAction.sequence([inhale, exhale]))
+    }
+
+    /// Mathematical smooth-step interpolation
+    static func smoothStep(from a: CGFloat, to b: CGFloat, t: CGFloat) -> CGFloat {
+        let clampedT = max(0, min(1, t))
+        let smoothT = clampedT * clampedT * (3 - 2 * clampedT)
+        return a + (b - a) * smoothT
+    }
 }
